@@ -53,16 +53,20 @@ app.use((err, req, res, next) => {
   });
 });
 
-const PORT = process.env.PORT || 5000;
+// Apenas iniciar o servidor se não estiver rodando no Vercel
+if (process.env.VERCEL === undefined) {
+  const PORT = process.env.PORT || 5000;
 
-const server = app.listen(PORT, () => {
-  console.log(`Servidor rodando em modo ${process.env.NODE_ENV} na porta ${PORT}`);
-});
+  const server = app.listen(PORT, () => {
+    console.log(`Servidor rodando em modo ${process.env.NODE_ENV} na porta ${PORT}`);
+  });
 
-// Tratamento de rejeições não tratadas
-process.on('unhandledRejection', (err, promise) => {
-  console.log(`Erro: ${err.message}`);
-  server.close(() => process.exit(1));
-});
+  // Tratamento de rejeições não tratadas
+  process.on('unhandledRejection', (err, promise) => {
+    console.log(`Erro: ${err.message}`);
+    server.close(() => process.exit(1));
+  });
+}
 
+// Exportar como handler serverless para Vercel
 module.exports = app;
