@@ -1,4 +1,4 @@
-const Event = require('../models/Event');
+const Event = require('../models/event');
 
 // @desc    Obter todos os eventos do usuário
 // @route   GET /api/events
