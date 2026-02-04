@@ -1,4 +1,5 @@
 const jwt = require('jsonwebtoken');
+const User = require('../models/user');
 
 // Middleware para proteger rotas
 exports.protect = async (req, res, next) => {
@@ -24,25 +25,69 @@ exports.protect = async (req, res, next) => {
     // Verificar token
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
+    // Buscar usuário completo
+    const user = await User.findById(decoded.id).select('-verificationToken -verificationTokenExpire');
+
+    if (!user) {
+      return res.status(401).json({
+        success: false,
+        error: 'Usuário não encontrado'
+      });
+    }
+
+    if (!user.isVerified) {
+      return res.status(401).json({
+        success: false,
+        error: 'Email não verificado'
+      });
+    }
+
     // Adicionar usuário à requisição
     req.user = {
-      id: decoded.id,
-      email: decoded.email
+      id: user._id.toString(),
+      email: user.email,
+      role: user.role,
+      name: user.name
     };
 
     next();
   } catch (error) {
     return res.status(401).json({
       success: false,
-      error: 'Não autorizado - Token inválido'
+      error: 'Não autorizado - Token inválido',
+      message: error.message
     });
   }
 };
 
+// Middleware para verificar se é admin
+exports.authorize = (...roles) => {
+  return (req, res, next) => {
+    if (!roles.includes(req.user.role)) {
+      return res.status(403).json({
+        success: false,
+        error: `Acesso negado. Função ${req.user.role} não autorizada para esta ação`
+      });
+    }
+    next();
+  };
+};
+
+// Middleware específico para admin
+exports.adminOnly = (req, res, next) => {
+  if (req.user.role !== 'admin') {
+    return res.status(403).json({
+      success: false,
+      error: 'Acesso negado. Apenas administradores podem realizar esta ação'
+    });
+  }
+  next();
+};
+
 // Função auxiliar para gerar token JWT
-exports.generateToken = (userId, email) => {
+exports.generateToken = (userId, email, role) => {
   return jwt.sign(
-    { id: userId, email },
+    { id: userId, email, role },
     process.env.JWT_SECRET,
     { expiresIn: process.env.JWT_EXPIRE || '30d' }
   );

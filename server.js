@@ -23,14 +23,21 @@ if (process.env.NODE_ENV === 'development') {
 }
 
 // Rotas
-app.use('/api/auth', require('./src/routes/authRoutes')); // Rotas de autenticação
+app.use('/api/auth', require('./src/routes/authRoutes'));
 app.use('/api/events', require('./src/routes/eventRoutes'));
+app.use('/api/suggestions', require('./src/routes/suggestionsRoutes')); // Nova rota
 
 // Rota de teste
 app.get('/', (req, res) => {
   res.json({
+    success: true,
     message: 'API do Calendário Acadêmico',
-    version: '1.0.0'
+    version: '1.0.0',
+    endpoints: {
+      auth: '/api/auth',
+      events: '/api/events',
+      suggestions: '/api/suggestions'
+    }
   });
 });
 
@@ -58,12 +65,12 @@ if (process.env.VERCEL === undefined) {
   const PORT = process.env.PORT || 5000;
 
   const server = app.listen(PORT, () => {
-    console.log(`Servidor rodando em modo ${process.env.NODE_ENV} na porta ${PORT}`);
+    console.log(`🚀 Servidor rodando em modo ${process.env.NODE_ENV} na porta ${PORT}`);
   });
 
   // Tratamento de rejeições não tratadas
   process.on('unhandledRejection', (err, promise) => {
-    console.log(`Erro: ${err.message}`);
+    console.log(`❌ Erro: ${err.message}`);
     server.close(() => process.exit(1));
   });
 }
