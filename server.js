@@ -25,7 +25,8 @@ if (process.env.NODE_ENV === 'development') {
 // Rotas
 app.use('/api/auth', require('./src/routes/authRoutes'));
 app.use('/api/events', require('./src/routes/eventRoutes'));
-app.use('/api/suggestions', require('./src/routes/suggestionsRoutes')); // Nova rota
+app.use('/api/suggestions', require('./src/routes/suggestionsRoutes')); 
+app.use('/api/subjects', require('./src/routes/subjectRoutes'));
 
 // Rota de teste
 app.get('/', (req, res) => {
@@ -36,7 +37,8 @@ app.get('/', (req, res) => {
     endpoints: {
       auth: '/api/auth',
       events: '/api/events',
-      suggestions: '/api/suggestions'
+      suggestions: '/api/suggestions',
+      subjects: '/api/subjects'
     }
   });
 });
