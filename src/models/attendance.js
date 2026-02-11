@@ -45,8 +45,8 @@ attendanceSchema.statics.getAttendanceStats = async function(userId, subjectId) 
   const stats = await this.aggregate([
     {
       $match: {
-        userId: mongoose.Types.ObjectId(userId),
-        subjectId: mongoose.Types.ObjectId(subjectId)
+        userId: new mongoose.Types.ObjectId(userId),
+        subjectId: new mongoose.Types.ObjectId(subjectId)
       }
     },
     {
