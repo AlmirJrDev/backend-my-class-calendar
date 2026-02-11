@@ -2,15 +2,15 @@ const Subject = require('../models/subject');
 
 // @desc    Obter todas as matérias
 // @route   GET /api/subjects
-// @access  Private
+// @access  Public
 exports.getSubjects = async (req, res) => {
   try {
     const { active } = req.query;
     
     // Construir filtro
-    const filter = req.user.role === 'admin' 
+    const filter = req.user && req.user.role === 'admin' 
       ? { userId: req.user.id }
-      : {}; // Alunos veem todas as matérias
+      : {}; // Visitantes e alunos veem todas as matérias
     
     // Filtrar por status ativo/inativo se especificado
     if (active !== undefined) {
@@ -35,7 +35,7 @@ exports.getSubjects = async (req, res) => {
 
 // @desc    Obter uma matéria específica
 // @route   GET /api/subjects/:id
-// @access  Private
+// @access  Public
 exports.getSubject = async (req, res) => {
   try {
     const subject = await Subject.findById(req.params.id);
@@ -47,8 +47,8 @@ exports.getSubject = async (req, res) => {
       });
     }
 
-    // Admin pode ver suas matérias, alunos podem ver qualquer matéria
-    if (req.user.role === 'admin' && subject.userId.toString() !== req.user.id) {
+    // Admin autenticado pode ver suas matérias, visitantes e alunos podem ver qualquer matéria
+    if (req.user && req.user.role === 'admin' && subject.userId.toString() !== req.user.id) {
       return res.status(403).json({
         success: false,
         error: 'Acesso negado'
@@ -233,11 +233,11 @@ exports.toggleActive = async (req, res) => {
 
 // @desc    Obter grade horária completa
 // @route   GET /api/subjects/schedule/week
-// @access  Private
+// @access  Public
 exports.getWeekSchedule = async (req, res) => {
   try {
     // Construir filtro
-    const filter = req.user.role === 'admin' 
+    const filter = req.user && req.user.role === 'admin' 
       ? { userId: req.user.id, active: true }
       : { active: true };
 
@@ -289,7 +289,7 @@ exports.getWeekSchedule = async (req, res) => {
 
 // @desc    Obter matérias por dia da semana
 // @route   GET /api/subjects/day/:dayOfWeek
-// @access  Private
+// @access  Public
 exports.getSubjectsByDay = async (req, res) => {
   try {
     const { dayOfWeek } = req.params;
@@ -303,7 +303,7 @@ exports.getSubjectsByDay = async (req, res) => {
     }
 
     // Construir filtro
-    const filter = req.user.role === 'admin' 
+    const filter = req.user && req.user.role === 'admin' 
       ? { userId: req.user.id, active: true, 'schedule.dayOfWeek': day }
       : { active: true, 'schedule.dayOfWeek': day };
 

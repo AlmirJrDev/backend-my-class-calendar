@@ -2,17 +2,17 @@ const Event = require('../models/event');
 
 // @desc    Obter todos os eventos (público para visualização)
 // @route   GET /api/events
-// @access  Private
+// @access  Public
 exports.getEvents = async (req, res) => {
   try {
     const { startDate, endDate, type } = req.query;
     
     // Construir filtro base
-    // Se for admin, mostra seus eventos
-    // Se for aluno, mostra TODOS os eventos (do admin)
-    const filter = req.user.role === 'admin' 
+    // Se for admin autenticado, mostra seus eventos
+    // Se for aluno autenticado ou não autenticado, mostra TODOS os eventos
+    const filter = req.user && req.user.role === 'admin' 
       ? { userId: req.user.id }
-      : {}; // Alunos veem todos os eventos
+      : {}; // Alunos e visitantes veem todos os eventos
     
     // Adicionar filtros opcionais
     if (startDate && endDate) {
@@ -44,7 +44,7 @@ exports.getEvents = async (req, res) => {
 
 // @desc    Obter um evento específico
 // @route   GET /api/events/:id
-// @access  Private
+// @access  Public
 exports.getEvent = async (req, res) => {
   try {
     const event = await Event.findById(req.params.id);
@@ -56,8 +56,8 @@ exports.getEvent = async (req, res) => {
       });
     }
 
-    // Admin pode ver seus eventos, alunos podem ver qualquer evento
-    if (req.user.role === 'admin' && event.userId.toString() !== req.user.id) {
+    // Admin autenticado pode ver seus eventos, visitantes e alunos podem ver qualquer evento
+    if (req.user && req.user.role === 'admin' && event.userId.toString() !== req.user.id) {
       return res.status(403).json({
         success: false,
         error: 'Acesso negado'
@@ -242,7 +242,7 @@ exports.toggleComplete = async (req, res) => {
 
 // @desc    Obter eventos do mês
 // @route   GET /api/events/month/:year/:month
-// @access  Private
+// @access  Public
 exports.getEventsByMonth = async (req, res) => {
   try {
     const { year, month } = req.params;
@@ -250,8 +250,8 @@ exports.getEventsByMonth = async (req, res) => {
     const startDate = new Date(year, month - 1, 1);
     const endDate = new Date(year, month, 0, 23, 59, 59);
 
-    // Alunos veem todos os eventos, admin vê apenas os seus
-    const filter = req.user.role === 'admin'
+    // Visitantes e alunos veem todos os eventos, admin vê apenas os seus
+    const filter = req.user && req.user.role === 'admin'
       ? { userId: req.user.id }
       : {};
 

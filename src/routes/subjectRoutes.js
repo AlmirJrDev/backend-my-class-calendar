@@ -11,21 +11,18 @@ const {
   getSubjectsByDay
 } = require('../controllers/subjectController');
 
-const { protect, adminOnly } = require('../middleware/auth');
+const { protect, optionalAuth, adminOnly } = require('../middleware/auth');
 
-// Aplicar proteção a todas as rotas
-router.use(protect);
+// Rotas de leitura (públicas com autenticação opcional)
+router.get('/', optionalAuth, getSubjects);
+router.get('/schedule/week', optionalAuth, getWeekSchedule);
+router.get('/day/:dayOfWeek', optionalAuth, getSubjectsByDay);
+router.get('/:id', optionalAuth, getSubject);
 
-// Rotas de leitura (todos podem ver)
-router.get('/', getSubjects);
-router.get('/schedule/week', getWeekSchedule);
-router.get('/day/:dayOfWeek', getSubjectsByDay);
-router.get('/:id', getSubject);
-
-// Rotas de escrita (apenas admin)
-router.post('/', adminOnly, createSubject);
-router.put('/:id', adminOnly, updateSubject);
-router.delete('/:id', adminOnly, deleteSubject);
-router.patch('/:id/toggle-active', adminOnly, toggleActive);
+// Rotas de escrita (apenas admin autenticado)
+router.post('/', protect, adminOnly, createSubject);
+router.put('/:id', protect, adminOnly, updateSubject);
+router.delete('/:id', protect, adminOnly, deleteSubject);
+router.patch('/:id/toggle-active', protect, adminOnly, toggleActive);
 
 module.exports = router;

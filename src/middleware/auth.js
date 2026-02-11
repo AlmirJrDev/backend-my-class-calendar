@@ -60,6 +60,51 @@ exports.protect = async (req, res, next) => {
   }
 };
 
+// Middleware de autenticação OPCIONAL - permite acesso público mas adiciona usuário se autenticado
+exports.optionalAuth = async (req, res, next) => {
+  let token;
+
+  // Verificar se o token existe no header
+  if (
+    req.headers.authorization &&
+    req.headers.authorization.startsWith('Bearer')
+  ) {
+    token = req.headers.authorization.split(' ')[1];
+  }
+
+  // Se não houver token, continua sem usuário (acesso público)
+  if (!token) {
+    req.user = null;
+    return next();
+  }
+
+  try {
+    // Verificar token
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+
+    // Buscar usuário completo
+    const user = await User.findById(decoded.id).select('-verificationToken -verificationTokenExpire');
+
+    if (user && user.isVerified) {
+      // Adicionar usuário à requisição se válido
+      req.user = {
+        id: user._id.toString(),
+        email: user.email,
+        role: user.role,
+        name: user.name
+      };
+    } else {
+      req.user = null;
+    }
+
+    next();
+  } catch (error) {
+    // Se token inválido, continua sem usuário (acesso público)
+    req.user = null;
+    next();
+  }
+};
+
 // Middleware para verificar se é admin
 exports.authorize = (...roles) => {
   return (req, res, next) => {

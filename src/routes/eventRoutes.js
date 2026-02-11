@@ -10,20 +10,17 @@ const {
   getEventsByMonth
 } = require('../controllers/eventController');
 
-const { protect, adminOnly } = require('../middleware/auth');
+const { protect, optionalAuth, adminOnly } = require('../middleware/auth');
 
-// Aplicar proteção a todas as rotas
-router.use(protect);
+// Rotas de leitura (públicas com autenticação opcional)
+router.get('/', optionalAuth, getEvents);
+router.get('/month/:year/:month', optionalAuth, getEventsByMonth);
+router.get('/:id', optionalAuth, getEvent);
 
-// Rotas de leitura (todos podem ver)
-router.get('/', getEvents);
-router.get('/month/:year/:month', getEventsByMonth);
-router.get('/:id', getEvent);
-
-// Rotas de escrita (apenas admin)
-router.post('/', adminOnly, createEvent);
-router.put('/:id', adminOnly, updateEvent);
-router.delete('/:id', adminOnly, deleteEvent);
-router.patch('/:id/toggle-complete', adminOnly, toggleComplete);
+// Rotas de escrita (apenas admin autenticado)
+router.post('/', protect, adminOnly, createEvent);
+router.put('/:id', protect, adminOnly, updateEvent);
+router.delete('/:id', protect, adminOnly, deleteEvent);
+router.patch('/:id/toggle-complete', protect, adminOnly, toggleComplete);
 
 module.exports = router;
