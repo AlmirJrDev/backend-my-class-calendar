@@ -27,7 +27,7 @@ app.use('/api/auth', require('./src/routes/authRoutes'));
 app.use('/api/events', require('./src/routes/eventRoutes'));
 app.use('/api/suggestions', require('./src/routes/suggestionsRoutes')); 
 app.use('/api/subjects', require('./src/routes/subjectRoutes'));
-
+app.use('/api/attendance', require('./src/routes/attendanceRoutes'))
 // Rota de teste
 app.get('/', (req, res) => {
   res.json({
