@@ -101,7 +101,7 @@ attendanceSchema.statics.getAttendanceStats = async function(userId, subjectId) 
 
 // Método para obter todas as estatísticas de um usuário
 attendanceSchema.statics.getAllUserStats = async function(userId) {
-  const subjects = await this.distinct('subjectId', { userId: mongoose.Types.ObjectId(userId) });
+  const subjects = await this.distinct('subjectId', { userId: new mongoose.Types.ObjectId(userId) });
   
   const statsPromises = subjects.map(async (subjectId) => {
     const stats = await this.getAttendanceStats(userId, subjectId);
