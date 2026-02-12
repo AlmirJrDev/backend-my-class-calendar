@@ -25,7 +25,7 @@ const attendanceSchema = new mongoose.Schema({
   isPresent: {
     type: Boolean,
     required: true,
-    default: false // false = falta, true = presença
+    default: false
   },
   notes: {
     type: String,
@@ -35,13 +35,44 @@ const attendanceSchema = new mongoose.Schema({
   timestamps: true
 });
 
-// Índices compostos para melhor performance e evitar duplicações
+// Índices compostos
 attendanceSchema.index({ userId: 1, subjectId: 1 });
 attendanceSchema.index({ userId: 1, subjectId: 1, date: 1, period: 1 }, { unique: true });
 attendanceSchema.index({ date: 1 });
 
-// Método estático para calcular estatísticas de presença
+// Middleware para validar data dentro do semestre
+attendanceSchema.pre('save', async function(next) {
+  try {
+    const Subject = mongoose.model('Subject');
+    const subject = await Subject.findById(this.subjectId);
+    
+    if (!subject) {
+      return next(new Error('Matéria não encontrada'));
+    }
+    
+    const attendanceDate = new Date(this.date);
+    const startDate = new Date(subject.semesterStartDate);
+    const endDate = new Date(subject.semesterEndDate);
+    
+    if (attendanceDate < startDate || attendanceDate > endDate) {
+      return next(new Error('A data do registro deve estar dentro do período do semestre'));
+    }
+    
+    next();
+  } catch (error) {
+    next(error);
+  }
+});
+
+// Método estático para calcular estatísticas de presença (ATUALIZADO)
 attendanceSchema.statics.getAttendanceStats = async function(userId, subjectId) {
+  const Subject = mongoose.model('Subject');
+  const subject = await Subject.findById(subjectId);
+  
+  if (!subject) {
+    throw new Error('Matéria não encontrada');
+  }
+
   const stats = await this.aggregate([
     {
       $match: {
@@ -52,7 +83,7 @@ attendanceSchema.statics.getAttendanceStats = async function(userId, subjectId) 
     {
       $group: {
         _id: null,
-        totalClasses: { $sum: 1 },
+        totalRegistered: { $sum: 1 },
         absences: {
           $sum: {
             $cond: [{ $eq: ['$isPresent', false] }, 1, 0]
@@ -67,35 +98,37 @@ attendanceSchema.statics.getAttendanceStats = async function(userId, subjectId) 
     }
   ]);
 
-  if (stats.length === 0) {
-    return {
-      totalClasses: 0,
-      absences: 0,
-      presences: 0,
-      attendanceRate: 0,
-      absenceRate: 0,
-      maxAbsencesAllowed: 0,
-      remainingAbsences: 0,
-      isAtRisk: false
-    };
-  }
-
-  const { totalClasses, absences, presences } = stats[0];
+  const totalClasses = subject.totalClasses;
+  const totalRegistered = stats.length > 0 ? stats[0].totalRegistered : 0;
+  const absences = stats.length > 0 ? stats[0].absences : 0;
+  const presences = stats.length > 0 ? stats[0].presences : 0;
+  
   const maxAbsencesAllowed = Math.floor(totalClasses * 0.25); // 25% do total
   const remainingAbsences = Math.max(0, maxAbsencesAllowed - absences);
+  
+  // Calcular taxas baseadas no total de aulas da matéria
   const attendanceRate = totalClasses > 0 ? (presences / totalClasses) * 100 : 0;
   const absenceRate = totalClasses > 0 ? (absences / totalClasses) * 100 : 0;
+  const registeredRate = totalClasses > 0 ? (totalRegistered / totalClasses) * 100 : 0;
+  
   const isAtRisk = absences > maxAbsencesAllowed;
+  const classesRemaining = Math.max(0, totalClasses - totalRegistered);
 
   return {
     totalClasses,
+    totalRegistered,
+    classesRemaining,
     absences,
     presences,
     attendanceRate: Math.round(attendanceRate * 100) / 100,
     absenceRate: Math.round(absenceRate * 100) / 100,
+    registeredRate: Math.round(registeredRate * 100) / 100,
     maxAbsencesAllowed,
     remainingAbsences,
-    isAtRisk
+    isAtRisk,
+    semesterStartDate: subject.semesterStartDate,
+    semesterEndDate: subject.semesterEndDate,
+    isSemesterActive: subject.isSemesterActive()
   };
 };
 

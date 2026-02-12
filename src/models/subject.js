@@ -13,7 +13,7 @@ const subjectSchema = new mongoose.Schema({
   },
   color: {
     type: String,
-    default: '#3b82f6', // Cor padrão azul
+    default: '#3b82f6',
     trim: true
   },
   // Configuração das aulas por dia da semana
@@ -22,8 +22,8 @@ const subjectSchema = new mongoose.Schema({
       dayOfWeek: {
         type: Number,
         required: true,
-        min: 0, // 0 = Domingo
-        max: 6, // 6 = Sábado
+        min: 0,
+        max: 6,
         validate: {
           validator: Number.isInteger,
           message: 'O dia da semana deve ser um número inteiro entre 0 e 6'
@@ -34,7 +34,6 @@ const subjectSchema = new mongoose.Schema({
         required: true,
         validate: {
           validator: function(periods) {
-            // Verifica se todos os períodos são entre 1 e 5
             return periods.length > 0 && periods.every(p => p >= 1 && p <= 5);
           },
           message: 'Os períodos devem estar entre 1 e 5 e ter pelo menos um período'
@@ -42,6 +41,30 @@ const subjectSchema = new mongoose.Schema({
       }
     }
   ],
+  // NOVAS PROPRIEDADES
+  semesterStartDate: {
+    type: Date,
+    required: [true, 'A data de início do semestre é obrigatória']
+  },
+  semesterEndDate: {
+    type: Date,
+    required: [true, 'A data de término do semestre é obrigatória'],
+    validate: {
+      validator: function(endDate) {
+        return endDate > this.semesterStartDate;
+      },
+      message: 'A data de término deve ser posterior à data de início'
+    }
+  },
+  totalClasses: {
+    type: Number,
+    required: [true, 'O total de aulas no semestre é obrigatório'],
+    min: [1, 'Deve haver pelo menos 1 aula'],
+    validate: {
+      validator: Number.isInteger,
+      message: 'O total de aulas deve ser um número inteiro'
+    }
+  },
   userId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
@@ -55,7 +78,7 @@ const subjectSchema = new mongoose.Schema({
   timestamps: true
 });
 
-// Índices para melhorar performance
+// Índices
 subjectSchema.index({ userId: 1 });
 subjectSchema.index({ userId: 1, active: 1 });
 subjectSchema.index({ 'schedule.dayOfWeek': 1 });
@@ -90,6 +113,28 @@ subjectSchema.methods.getFormattedSchedule = function() {
     dayNumber: s.dayOfWeek,
     periods: s.periods.sort((a, b) => a - b)
   }));
+};
+
+// Método para calcular o máximo de faltas permitidas (25%)
+subjectSchema.methods.getMaxAbsencesAllowed = function() {
+  return Math.floor(this.totalClasses * 0.25);
+};
+
+// Método para verificar se o semestre está ativo
+subjectSchema.methods.isSemesterActive = function() {
+  const now = new Date();
+  return now >= this.semesterStartDate && now <= this.semesterEndDate;
+};
+
+// Método para calcular aulas restantes no semestre
+subjectSchema.methods.getRemainingClasses = async function() {
+  const Attendance = mongoose.model('Attendance');
+  const attendedClasses = await Attendance.countDocuments({
+    subjectId: this._id,
+    userId: this.userId
+  });
+  
+  return Math.max(0, this.totalClasses - attendedClasses);
 };
 
 module.exports = mongoose.model('Subject', subjectSchema);
