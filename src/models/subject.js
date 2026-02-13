@@ -48,13 +48,7 @@ const subjectSchema = new mongoose.Schema({
   },
   semesterEndDate: {
     type: Date,
-    required: [true, 'A data de término do semestre é obrigatória'],
-    validate: {
-      validator: function(endDate) {
-        return endDate > this.semesterStartDate;
-      },
-      message: 'A data de término deve ser posterior à data de início'
-    }
+    required: [true, 'A data de término do semestre é obrigatória']
   },
   totalClasses: {
     type: Number,
@@ -90,9 +84,20 @@ subjectSchema.pre('validate', function(next) {
     const uniqueDays = [...new Set(days)];
     
     if (days.length !== uniqueDays.length) {
-      next(new Error('Não é permitido ter o mesmo dia da semana repetido'));
+      return next(new Error('Não é permitido ter o mesmo dia da semana repetido'));
     }
   }
+  
+  // Validar datas - CORRIGIDO
+  if (this.semesterStartDate && this.semesterEndDate) {
+    const startDate = new Date(this.semesterStartDate);
+    const endDate = new Date(this.semesterEndDate);
+    
+    if (endDate <= startDate) {
+      return next(new Error('A data de término deve ser posterior à data de início'));
+    }
+  }
+  
   next();
 });
 
