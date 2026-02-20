@@ -23,7 +23,7 @@ const eventSuggestionSchema = new mongoose.Schema({
     time: String,
     type: {
       type: String,
-      enum: ['prova', 'trabalho', 'aula', 'evento', 'outro']
+      enum: ['prova', 'trabalho', 'aula', 'atividade', 'evento', 'outro']
     },
     subject: String,
     location: String,
