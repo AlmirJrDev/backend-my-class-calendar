@@ -8,7 +8,7 @@ const eventSchema = new mongoose.Schema({
   },
   type: {
     type: String,
-    enum: ['class', 'assignment', 'exam'],
+    enum: ['class', 'assignment', 'exam', 'ativity'],
     required: [true, 'O tipo de evento é obrigatório']
   },
   date: {
