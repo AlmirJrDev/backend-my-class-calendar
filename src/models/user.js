@@ -27,14 +27,14 @@ const userSchema = new mongoose.Schema({
     default: false
   },
   verificationToken: String,
-  verificationTokenExpire: Date,
+  verificationOtp: String,        // hash do OTP de 6 dígitos
+  verificationTokenExpire: Date,  // compartilhado entre OTP e magic link
   createdAt: {
     type: Date,
     default: Date.now
   }
 });
 
-// Índices para melhor performance
 userSchema.index({ email: 1 });
 userSchema.index({ role: 1 });
 
