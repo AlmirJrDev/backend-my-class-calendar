@@ -149,7 +149,7 @@ attendanceSchema.statics.getAllUserStats = async function(userId) {
     };
   });
 
-  return await Promise.all(statsPromises);
+    const results = await Promise.all(statsPromises);
   return results.filter(Boolean);
 };
 
