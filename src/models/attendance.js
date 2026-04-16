@@ -70,7 +70,7 @@ attendanceSchema.statics.getAttendanceStats = async function(userId, subjectId) 
   const subject = await Subject.findById(subjectId);
   
   if (!subject) {
-    throw new Error('Matéria não encontrada');
+    return null;
   }
 
   const stats = await this.aggregate([
@@ -138,6 +138,7 @@ attendanceSchema.statics.getAllUserStats = async function(userId) {
   
   const statsPromises = subjects.map(async (subjectId) => {
     const stats = await this.getAttendanceStats(userId, subjectId);
+    if (!stats) return null;
     const subject = await mongoose.model('Subject').findById(subjectId);
     
     return {
@@ -149,6 +150,7 @@ attendanceSchema.statics.getAllUserStats = async function(userId) {
   });
 
   return await Promise.all(statsPromises);
+  return results.filter(Boolean);
 };
 
 module.exports = mongoose.model('Attendance', attendanceSchema);
