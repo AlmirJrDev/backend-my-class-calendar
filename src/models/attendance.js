@@ -27,6 +27,10 @@ const attendanceSchema = new mongoose.Schema({
     required: true,
     default: false
   },
+  autoFilled: {
+  type: Boolean,
+  default: false
+},
   notes: {
     type: String,
     trim: true
@@ -132,25 +136,81 @@ attendanceSchema.statics.getAttendanceStats = async function(userId, subjectId) 
   };
 };
 
-// Método para obter todas as estatísticas de um usuário
+attendanceSchema.statics.autoFillPastPresences = async function(userId, subjectId) {
+  const Subject = mongoose.model('Subject');
+  const subject = await Subject.findById(subjectId);
+  if (!subject || !subject.schedule?.length) return;
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  const start = new Date(subject.semesterStartDate);
+  const end = new Date(subject.semesterEndDate);
+  const limitDate = end < today ? end : new Date(today - 1); // até ontem
+
+  // Mapeia dias da semana das aulas (assumindo subject.schedule = [{weekday: 1, period: 2}, ...])
+  const scheduleDays = subject.schedule; // [{weekday: 0-6, period: 1-5}]
+
+  const toFill = [];
+  const cursor = new Date(start);
+
+  while (cursor <= limitDate) {
+    for (const slot of scheduleDays) {
+      if (cursor.getDay() === slot.weekday) {
+        const exists = await this.findOne({
+          userId: new mongoose.Types.ObjectId(userId),
+          subjectId: new mongoose.Types.ObjectId(subjectId),
+          date: {
+            $gte: new Date(cursor.setHours(0,0,0,0)),
+            $lte: new Date(cursor.setHours(23,59,59,999))
+          },
+          period: slot.period
+        });
+
+        if (!exists) {
+          toFill.push({
+            userId,
+            subjectId,
+            date: new Date(cursor),
+            period: slot.period,
+            isPresent: true,
+            autoFilled: true
+          });
+        }
+      }
+    }
+    cursor.setDate(cursor.getDate() + 1);
+  }
+
+  if (toFill.length > 0) {
+    await this.insertMany(toFill, { ordered: false });
+  }
+};
+
 attendanceSchema.statics.getAllUserStats = async function(userId) {
-  const subjects = await this.distinct('subjectId', { userId: new mongoose.Types.ObjectId(userId) });
+  const Subject = mongoose.model('Subject');
   
-  const statsPromises = subjects.map(async (subjectId) => {
-    const stats = await this.getAttendanceStats(userId, subjectId);
+  // Busca todas as matérias do usuário, não só as que têm registro
+  const subjects = await Subject.find({ userId: new mongoose.Types.ObjectId(userId) });
+
+  const statsPromises = subjects.map(async (subject) => {
+    // Auto-fill antes de calcular
+    await this.autoFillPastPresences(userId, subject._id);
+
+    const stats = await this.getAttendanceStats(userId, subject._id);
     if (!stats) return null;
-    const subject = await mongoose.model('Subject').findById(subjectId);
-    
+
     return {
-      subjectId,
-      subjectName: subject?.name || 'Matéria não encontrada',
-      subjectColor: subject?.color,
+      subjectId: subject._id,
+      subjectName: subject.name,
+      subjectColor: subject.color,
       ...stats
     };
   });
 
-    const results = await Promise.all(statsPromises);
+  const results = await Promise.all(statsPromises);
   return results.filter(Boolean);
 };
+
 
 module.exports = mongoose.model('Attendance', attendanceSchema);
