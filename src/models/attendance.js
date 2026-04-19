@@ -27,9 +27,10 @@ const attendanceSchema = new mongoose.Schema({
     required: true,
     default: false
   },
-  autoFilled: {
+autoFilled: {
   type: Boolean,
-  default: false
+  default: false,
+  index: true
 },
   notes: {
     type: String,
@@ -136,66 +137,99 @@ attendanceSchema.statics.getAttendanceStats = async function(userId, subjectId) 
   };
 };
 
-attendanceSchema.statics.autoFillPastPresences = async function(userId, subjectId) {
-  const Subject = mongoose.model('Subject');
-  const subject = await Subject.findById(subjectId);
-  if (!subject || !subject.schedule?.length) return;
+// models/attendance.js — substituir o método getAllUserStats existente e adicionar autoFillPastPresences
 
+attendanceSchema.statics.autoFillPastPresences = async function(userId, subject) {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 
+  const semesterEnd = new Date(subject.semesterEndDate);
+  semesterEnd.setHours(23, 59, 59, 999);
+
+  // Limite: até ontem (dias que já passaram por completo)
+  const yesterday = new Date(today);
+  yesterday.setDate(yesterday.getDate() - 1);
+  yesterday.setHours(23, 59, 59, 999);
+
+  // Não pode ir além do fim do semestre
+  const limitDate = semesterEnd < yesterday ? semesterEnd : yesterday;
+
   const start = new Date(subject.semesterStartDate);
-  const end = new Date(subject.semesterEndDate);
-  const limitDate = end < today ? end : new Date(today - 1); // até ontem
+  start.setHours(0, 0, 0, 0);
 
-  // Mapeia dias da semana das aulas (assumindo subject.schedule = [{weekday: 1, period: 2}, ...])
-  const scheduleDays = subject.schedule; // [{weekday: 0-6, period: 1-5}]
+  if (start > limitDate) return; // Semestre ainda não começou
 
-  const toFill = [];
+  // Montar mapa: dayOfWeek -> periods[]
+  const scheduleMap = {};
+  for (const slot of subject.schedule) {
+    scheduleMap[slot.dayOfWeek] = slot.periods;
+  }
+
+  // Buscar todos os registros existentes de uma vez (evitar N+1)
+  const existing = await this.find({
+    userId: new mongoose.Types.ObjectId(userId),
+    subjectId: subject._id,
+    date: { $gte: start, $lte: limitDate }
+  }).select('date period').lean();
+
+  // Criar Set para lookup rápido: "YYYY-MM-DD_period"
+  const existingSet = new Set(
+    existing.map(r => {
+      const d = new Date(r.date);
+      return `${d.toISOString().slice(0, 10)}_${r.period}`;
+    })
+  );
+
+  const toInsert = [];
   const cursor = new Date(start);
 
   while (cursor <= limitDate) {
-    for (const slot of scheduleDays) {
-      if (cursor.getDay() === slot.weekday) {
-        const exists = await this.findOne({
-          userId: new mongoose.Types.ObjectId(userId),
-          subjectId: new mongoose.Types.ObjectId(subjectId),
-          date: {
-            $gte: new Date(cursor.setHours(0,0,0,0)),
-            $lte: new Date(cursor.setHours(23,59,59,999))
-          },
-          period: slot.period
-        });
+    const dow = cursor.getDay();
+    const periods = scheduleMap[dow];
 
-        if (!exists) {
-          toFill.push({
-            userId,
-            subjectId,
+    if (periods) {
+      const dateStr = cursor.toISOString().slice(0, 10);
+
+      for (const period of periods) {
+        const key = `${dateStr}_${period}`;
+        if (!existingSet.has(key)) {
+          toInsert.push({
+            userId: new mongoose.Types.ObjectId(userId),
+            subjectId: subject._id,
             date: new Date(cursor),
-            period: slot.period,
+            period,
             isPresent: true,
             autoFilled: true
           });
         }
       }
     }
+
     cursor.setDate(cursor.getDate() + 1);
   }
 
-  if (toFill.length > 0) {
-    await this.insertMany(toFill, { ordered: false });
+  if (toInsert.length > 0) {
+    // ordered: false para não parar em duplicate key (race condition)
+    await this.insertMany(toInsert, { ordered: false }).catch(err => {
+      // Ignorar duplicate key errors silenciosamente
+      if (err.code !== 11000) throw err;
+    });
   }
 };
 
+// Substituir getAllUserStats — agora busca TODAS as matérias do usuário
 attendanceSchema.statics.getAllUserStats = async function(userId) {
   const Subject = mongoose.model('Subject');
-  
-  // Busca todas as matérias do usuário, não só as que têm registro
-  const subjects = await Subject.find({ userId: new mongoose.Types.ObjectId(userId) });
+
+  // Busca todas as matérias do usuário (não só as que têm registro)
+  const subjects = await Subject.find({
+    userId: new mongoose.Types.ObjectId(userId),
+    active: true
+  });
 
   const statsPromises = subjects.map(async (subject) => {
-    // Auto-fill antes de calcular
-    await this.autoFillPastPresences(userId, subject._id);
+    // Auto-fill presences antes de calcular
+    await this.autoFillPastPresences(userId, subject);
 
     const stats = await this.getAttendanceStats(userId, subject._id);
     if (!stats) return null;
@@ -211,6 +245,5 @@ attendanceSchema.statics.getAllUserStats = async function(userId) {
   const results = await Promise.all(statsPromises);
   return results.filter(Boolean);
 };
-
 
 module.exports = mongoose.model('Attendance', attendanceSchema);
