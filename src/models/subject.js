@@ -16,6 +16,36 @@ const subjectSchema = new mongoose.Schema({
     default: '#3b82f6',
     trim: true
   },
+  gradeFormula: [
+  {
+    key: {
+      type: String,
+      required: true,
+      trim: true,
+      uppercase: true  // "p1" vira "P1" automaticamente
+    },
+    label: {
+      type: String,
+      required: true,
+      trim: true
+    },
+    weight: {
+      type: Number,
+      required: true,
+      min: [0, 'Peso mínimo é 0'],
+      max: [1, 'Peso máximo é 1']
+    },
+    date: {
+      type: Date
+    }
+  }
+],
+minimumGrade: {
+  type: Number,
+  default: 6.0,
+  min: 0,
+  max: 10
+},
   // Configuração das aulas por dia da semana
   schedule: [
     {
