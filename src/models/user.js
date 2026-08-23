@@ -29,13 +29,16 @@ const userSchema = new mongoose.Schema({
   verificationToken: String,
   verificationOtp: String,        // hash do OTP de 6 dígitos
   verificationTokenExpire: Date,  // compartilhado entre OTP e magic link
+  otpAttempts: {                  // tentativas erradas do OTP vigente
+    type: Number,
+    default: 0
+  },
   createdAt: {
     type: Date,
     default: Date.now
   }
 });
 
-userSchema.index({ email: 1 });
 userSchema.index({ role: 1 });
 
 module.exports = mongoose.model('User', userSchema);

@@ -28,7 +28,7 @@ exports.getSubjects = async (req, res) => {
     res.status(500).json({
       success: false,
       error: 'Erro ao buscar matérias',
-      message: error.message
+      ...(process.env.NODE_ENV === 'development' && { message: error.message })
     });
   }
 };
@@ -63,7 +63,7 @@ exports.getSubject = async (req, res) => {
     res.status(500).json({
       success: false,
       error: 'Erro ao buscar matéria',
-      message: error.message
+      ...(process.env.NODE_ENV === 'development' && { message: error.message })
     });
   }
 };
@@ -95,7 +95,7 @@ exports.createSubject = async (req, res) => {
     res.status(400).json({
       success: false,
       error: 'Erro ao criar matéria',
-      message: error.message
+      ...(process.env.NODE_ENV === 'development' && { message: error.message })
     });
   }
 };
@@ -143,7 +143,7 @@ exports.updateSubject = async (req, res) => {
     res.status(400).json({
       success: false,
       error: 'Erro ao atualizar matéria',
-      message: error.message
+      ...(process.env.NODE_ENV === 'development' && { message: error.message })
     });
   }
 };
@@ -184,7 +184,7 @@ exports.deleteSubject = async (req, res) => {
     res.status(500).json({
       success: false,
       error: 'Erro ao deletar matéria',
-      message: error.message
+      ...(process.env.NODE_ENV === 'development' && { message: error.message })
     });
   }
 };
@@ -226,7 +226,7 @@ exports.toggleActive = async (req, res) => {
     res.status(500).json({
       success: false,
       error: 'Erro ao atualizar matéria',
-      message: error.message
+      ...(process.env.NODE_ENV === 'development' && { message: error.message })
     });
   }
 };
@@ -282,7 +282,7 @@ exports.getWeekSchedule = async (req, res) => {
     res.status(500).json({
       success: false,
       error: 'Erro ao buscar grade horária',
-      message: error.message
+      ...(process.env.NODE_ENV === 'development' && { message: error.message })
     });
   }
 };
@@ -340,7 +340,7 @@ exports.getSubjectsByDay = async (req, res) => {
     res.status(500).json({
       success: false,
       error: 'Erro ao buscar matérias do dia',
-      message: error.message
+      ...(process.env.NODE_ENV === 'development' && { message: error.message })
     });
   }
 };

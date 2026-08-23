@@ -55,7 +55,7 @@ exports.protect = async (req, res, next) => {
     return res.status(401).json({
       success: false,
       error: 'Não autorizado - Token inválido',
-      message: error.message
+      ...(process.env.NODE_ENV === 'development' && { message: error.message })
     });
   }
 };

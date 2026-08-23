@@ -37,7 +37,7 @@ exports.getEvents = async (req, res) => {
     res.status(500).json({
       success: false,
       error: 'Erro ao buscar eventos',
-      message: error.message
+      ...(process.env.NODE_ENV === 'development' && { message: error.message })
     });
   }
 };
@@ -72,7 +72,7 @@ exports.getEvent = async (req, res) => {
     res.status(500).json({
       success: false,
       error: 'Erro ao buscar evento',
-      message: error.message
+      ...(process.env.NODE_ENV === 'development' && { message: error.message })
     });
   }
 };
@@ -104,7 +104,7 @@ exports.createEvent = async (req, res) => {
     res.status(400).json({
       success: false,
       error: 'Erro ao criar evento',
-      message: error.message
+      ...(process.env.NODE_ENV === 'development' && { message: error.message })
     });
   }
 };
@@ -152,7 +152,7 @@ exports.updateEvent = async (req, res) => {
     res.status(400).json({
       success: false,
       error: 'Erro ao atualizar evento',
-      message: error.message
+      ...(process.env.NODE_ENV === 'development' && { message: error.message })
     });
   }
 };
@@ -193,7 +193,7 @@ exports.deleteEvent = async (req, res) => {
     res.status(500).json({
       success: false,
       error: 'Erro ao deletar evento',
-      message: error.message
+      ...(process.env.NODE_ENV === 'development' && { message: error.message })
     });
   }
 };
@@ -235,7 +235,7 @@ exports.toggleComplete = async (req, res) => {
     res.status(500).json({
       success: false,
       error: 'Erro ao atualizar evento',
-      message: error.message
+      ...(process.env.NODE_ENV === 'development' && { message: error.message })
     });
   }
 };
@@ -271,7 +271,7 @@ exports.getEventsByMonth = async (req, res) => {
     res.status(500).json({
       success: false,
       error: 'Erro ao buscar eventos do mês',
-      message: error.message
+      ...(process.env.NODE_ENV === 'development' && { message: error.message })
     });
   }
 };

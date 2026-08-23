@@ -76,7 +76,7 @@ exports.saveGrades = async (req, res) => {
       }
     });
   } catch (error) {
-    res.status(500).json({ success: false, error: 'Erro ao salvar notas', message: error.message });
+    res.status(500).json({ success: false, error: 'Erro ao salvar notas', ...(process.env.NODE_ENV === 'development' && { message: error.message }) });
   }
 };
 
@@ -108,7 +108,7 @@ exports.getGrades = async (req, res) => {
       }
     });
   } catch (error) {
-    res.status(500).json({ success: false, error: 'Erro ao buscar notas', message: error.message });
+    res.status(500).json({ success: false, error: 'Erro ao buscar notas', ...(process.env.NODE_ENV === 'development' && { message: error.message }) });
   }
 };
 
@@ -148,6 +148,6 @@ exports.clearGrade = async (req, res) => {
       data: { entry, simulation }
     });
   } catch (error) {
-    res.status(500).json({ success: false, error: 'Erro ao limpar nota', message: error.message });
+    res.status(500).json({ success: false, error: 'Erro ao limpar nota', ...(process.env.NODE_ENV === 'development' && { message: error.message }) });
   }
 };

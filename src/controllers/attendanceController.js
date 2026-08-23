@@ -65,7 +65,7 @@ exports.recordAttendance = async (req, res) => {
     res.status(500).json({
       success: false,
       error: 'Erro ao registrar presença',
-      message: error.message
+      ...(process.env.NODE_ENV === 'development' && { message: error.message })
     });
   }
 };
@@ -132,7 +132,7 @@ exports.bulkRecordAttendance = async (req, res) => {
     res.status(500).json({
       success: false,
       error: 'Erro ao registrar presenças em lote',
-      message: error.message
+      ...(process.env.NODE_ENV === 'development' && { message: error.message })
     });
   }
 };
@@ -167,7 +167,7 @@ exports.getSubjectStats = async (req, res) => {
     res.status(500).json({
       success: false,
       error: 'Erro ao buscar estatísticas',
-      message: error.message
+      ...(process.env.NODE_ENV === 'development' && { message: error.message })
     });
   }
 };
@@ -195,7 +195,7 @@ exports.getAllStats = async (req, res) => {
     res.status(500).json({
       success: false,
       error: 'Erro ao buscar estatísticas',
-      message: error.message
+      ...(process.env.NODE_ENV === 'development' && { message: error.message })
     });
   }
 };
@@ -238,7 +238,7 @@ exports.getSubjectHistory = async (req, res) => {
     res.status(500).json({
       success: false,
       error: 'Erro ao buscar histórico',
-      message: error.message
+      ...(process.env.NODE_ENV === 'development' && { message: error.message })
     });
   }
 };
@@ -275,7 +275,7 @@ exports.getAllHistory = async (req, res) => {
     res.status(500).json({
       success: false,
       error: 'Erro ao buscar histórico',
-      message: error.message
+      ...(process.env.NODE_ENV === 'development' && { message: error.message })
     });
   }
 };
@@ -313,7 +313,7 @@ exports.updateAttendance = async (req, res) => {
     res.status(500).json({
       success: false,
       error: 'Erro ao atualizar registro',
-      message: error.message
+      ...(process.env.NODE_ENV === 'development' && { message: error.message })
     });
   }
 };
@@ -346,7 +346,7 @@ exports.deleteAttendance = async (req, res) => {
     res.status(500).json({
       success: false,
       error: 'Erro ao deletar registro',
-      message: error.message
+      ...(process.env.NODE_ENV === 'development' && { message: error.message })
     });
   }
 };
@@ -368,7 +368,7 @@ exports.getAtRiskSubjects = async (req, res) => {
     res.status(500).json({
       success: false,
       error: 'Erro ao buscar matérias em risco',
-      message: error.message
+      ...(process.env.NODE_ENV === 'development' && { message: error.message })
     });
   }
 };
@@ -400,7 +400,7 @@ exports.getSummary = async (req, res) => {
     res.status(500).json({
       success: false,
       error: 'Erro ao gerar resumo',
-      message: error.message
+      ...(process.env.NODE_ENV === 'development' && { message: error.message })
     });
   }
 };

@@ -74,7 +74,7 @@ exports.createSuggestion = async (req, res) => {
     res.status(400).json({
       success: false,
       error: 'Erro ao criar sugestão',
-      message: error.message
+      ...(process.env.NODE_ENV === 'development' && { message: error.message })
     });
   }
 };
@@ -104,7 +104,7 @@ exports.getMySuggestions = async (req, res) => {
     res.status(500).json({
       success: false,
       error: 'Erro ao buscar sugestões',
-      message: error.message
+      ...(process.env.NODE_ENV === 'development' && { message: error.message })
     });
   }
 };
@@ -128,7 +128,7 @@ exports.getPendingSuggestions = async (req, res) => {
     res.status(500).json({
       success: false,
       error: 'Erro ao buscar sugestões',
-      message: error.message
+      ...(process.env.NODE_ENV === 'development' && { message: error.message })
     });
   }
 };
@@ -169,7 +169,7 @@ exports.getAllSuggestions = async (req, res) => {
     res.status(500).json({
       success: false,
       error: 'Erro ao buscar sugestões',
-      message: error.message
+      ...(process.env.NODE_ENV === 'development' && { message: error.message })
     });
   }
 };
@@ -267,7 +267,7 @@ exports.approveSuggestion = async (req, res) => {
     res.status(500).json({
       success: false,
       error: 'Erro ao aprovar sugestão',
-      message: error.message
+      ...(process.env.NODE_ENV === 'development' && { message: error.message })
     });
   }
 };
@@ -320,7 +320,7 @@ exports.rejectSuggestion = async (req, res) => {
     res.status(500).json({
       success: false,
       error: 'Erro ao rejeitar sugestão',
-      message: error.message
+      ...(process.env.NODE_ENV === 'development' && { message: error.message })
     });
   }
 };
@@ -358,7 +358,7 @@ exports.getSuggestion = async (req, res) => {
     res.status(500).json({
       success: false,
       error: 'Erro ao buscar sugestão',
-      message: error.message
+      ...(process.env.NODE_ENV === 'development' && { message: error.message })
     });
   }
 };
@@ -404,7 +404,7 @@ exports.deleteSuggestion = async (req, res) => {
     res.status(500).json({
       success: false,
       error: 'Erro ao deletar sugestão',
-      message: error.message
+      ...(process.env.NODE_ENV === 'development' && { message: error.message })
     });
   }
 };

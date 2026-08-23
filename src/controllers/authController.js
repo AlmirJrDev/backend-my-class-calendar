@@ -2,6 +2,11 @@ const User = require('../models/user');
 const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
 const nodemailer = require('nodemailer');
+const {
+  evaluateOtpAttempt,
+  generateOtp,
+  hashOtp
+} = require('../services/otpService');
 
 // Configurar transporter de email
 const createEmailTransporter = () => {
@@ -14,6 +19,14 @@ const createEmailTransporter = () => {
       pass: process.env.EMAIL_PASS
     }
   });
+};
+
+// FROM_NAME/FROM_EMAIL nem sempre estão definidos no ambiente; sem o fallback
+// o cabeçalho vira "undefined <undefined>" e o SMTP rejeita o envio.
+const emailFrom = () => {
+  const name = process.env.FROM_NAME || 'Calendário de Aulas';
+  const address = process.env.FROM_EMAIL || process.env.EMAIL_USER;
+  return `${name} <${address}>`;
 };
 
 // @desc    Registrar novo usuário (estudante)
@@ -62,7 +75,7 @@ exports.register = async (req, res) => {
       const transporter = createEmailTransporter();
 
       await transporter.sendMail({
-        from: `${process.env.FROM_NAME} <${process.env.FROM_EMAIL}>`,
+        from: emailFrom(),
         to: user.email,
         subject: 'Verificação de Email - Calendário de Aulas',
         html: `
@@ -113,14 +126,14 @@ exports.register = async (req, res) => {
       return res.status(500).json({
         success: false,
         error: 'Erro ao enviar email de verificação',
-        message: error.message
+        ...(process.env.NODE_ENV === 'development' && { message: error.message })
       });
     }
   } catch (error) {
     res.status(500).json({
       success: false,
       error: 'Erro ao registrar usuário',
-      message: error.message
+      ...(process.env.NODE_ENV === 'development' && { message: error.message })
     });
   }
 };
@@ -175,7 +188,7 @@ exports.verifyEmail = async (req, res) => {
     res.status(500).json({
       success: false,
       error: 'Erro ao verificar email',
-      message: error.message
+      ...(process.env.NODE_ENV === 'development' && { message: error.message })
     });
   }
 };
@@ -206,16 +219,18 @@ exports.requestAccess = async (req, res) => {
       });
     }
 
-    // Gerar OTP de 6 dígitos
-    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    // Math.random não serve para segredo: é previsível a partir de saídas
+    // anteriores. generateOtp usa crypto.randomInt.
+    const otp = generateOtp();
 
     // Gerar magic link token
     const magicToken = crypto.randomBytes(32).toString('hex');
 
     // Salvar hashes — ambos expiram juntos em 15 minutos
     user.verificationToken = crypto.createHash('sha256').update(magicToken).digest('hex');
-    user.verificationOtp = crypto.createHash('sha256').update(otp).digest('hex');
+    user.verificationOtp = hashOtp(otp);
     user.verificationTokenExpire = Date.now() + 15 * 60 * 1000;
+    user.otpAttempts = 0;
 
     await user.save();
 
@@ -225,7 +240,7 @@ exports.requestAccess = async (req, res) => {
       const transporter = createEmailTransporter();
 
       await transporter.sendMail({
-        from: `${process.env.FROM_NAME} <${process.env.FROM_EMAIL}>`,
+        from: emailFrom(),
         to: user.email,
         subject: 'Seu código de acesso - Calendário de Aulas',
         html: `
@@ -292,14 +307,14 @@ exports.requestAccess = async (req, res) => {
       return res.status(500).json({
         success: false,
         error: 'Erro ao enviar email',
-        message: error.message
+        ...(process.env.NODE_ENV === 'development' && { message: error.message })
       });
     }
   } catch (error) {
     res.status(500).json({
       success: false,
       error: 'Erro ao processar solicitação',
-      message: error.message
+      ...(process.env.NODE_ENV === 'development' && { message: error.message })
     });
   }
 };
@@ -318,25 +333,38 @@ exports.verifyOtp = async (req, res) => {
       });
     }
 
-    const hashedOtp = crypto.createHash('sha256').update(otp).digest('hex');
+    const account = await User.findOne({ email: email.toLowerCase() });
 
-    const user = await User.findOne({
-      email: email.toLowerCase(),
-      verificationOtp: hashedOtp,
-      verificationTokenExpire: { $gt: Date.now() }
-    });
+    const { outcome } = evaluateOtpAttempt(account, otp);
 
-    if (!user) {
+    if (outcome === 'locked') {
+      return res.status(429).json({
+        success: false,
+        error: 'Muitas tentativas incorretas. Solicite um novo código.'
+      });
+    }
+
+    if (outcome === 'mismatch') {
+      account.otpAttempts = (account.otpAttempts || 0) + 1;
+      await account.save();
+    }
+
+    // Mesma resposta para código errado e inexistente/expirado: não revela se
+    // o email está cadastrado nem se ainda há código válido.
+    if (outcome !== 'ok') {
       return res.status(400).json({
         success: false,
         error: 'Código inválido ou expirado'
       });
     }
 
+    const user = account;
+
     // Limpar ambos os tokens
     user.verificationToken = undefined;
     user.verificationOtp = undefined;
     user.verificationTokenExpire = undefined;
+    user.otpAttempts = 0;
     await user.save();
 
     const jwtToken = jwt.sign(
@@ -360,7 +388,7 @@ exports.verifyOtp = async (req, res) => {
     res.status(500).json({
       success: false,
       error: 'Erro ao verificar código',
-      message: error.message
+      ...(process.env.NODE_ENV === 'development' && { message: error.message })
     });
   }
 };
@@ -416,7 +444,7 @@ exports.magicLogin = async (req, res) => {
     res.status(500).json({
       success: false,
       error: 'Erro ao fazer login',
-      message: error.message
+      ...(process.env.NODE_ENV === 'development' && { message: error.message })
     });
   }
 };
@@ -436,7 +464,7 @@ exports.getMe = async (req, res) => {
     res.status(500).json({
       success: false,
       error: 'Erro ao buscar usuário',
-      message: error.message
+      ...(process.env.NODE_ENV === 'development' && { message: error.message })
     });
   }
 };
