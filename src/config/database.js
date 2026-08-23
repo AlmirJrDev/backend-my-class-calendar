@@ -2,11 +2,8 @@ const mongoose = require('mongoose');
 
 const connectDB = async () => {
   try {
-    const conn = await mongoose.connect(process.env.MONGODB_URI, {
-      // Opções recomendadas para MongoDB Atlas
-      useNewUrlParser: true,
-      useUnifiedTopology: true,
-    });
+    // useNewUrlParser/useUnifiedTopology não têm efeito no driver 4+.
+    const conn = await mongoose.connect(process.env.MONGODB_URI);
 
     console.log(`MongoDB conectado: ${conn.connection.host}`);
     
