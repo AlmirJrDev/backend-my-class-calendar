@@ -1,0 +1,28 @@
+name: CI
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - run: npm ci
+
+      - name: Test
+        run: npm test
+
+      # Garante que server.js e todas as rotas continuam parseáveis, já que o
+      # projeto não tem lint.
+      - name: Checar sintaxe
+        run: node --check server.js && find src -name '*.js' -exec node --check {} +
