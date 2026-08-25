@@ -11,6 +11,12 @@ const subjectSchema = new mongoose.Schema({
     required: [true, 'O nome do professor é obrigatório'],
     trim: true
   },
+  // Código da disciplina no plano de ensino (ex.: G00253.1). Opcional: as
+  // matérias cadastradas antes deste campo não têm um.
+  code: {
+    type: String,
+    trim: true
+  },
   color: {
     type: String,
     default: '#3b82f6',
