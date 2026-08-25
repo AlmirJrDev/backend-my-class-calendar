@@ -21,8 +21,10 @@ const User = require('../src/models/user');
 
 const APLICAR = process.argv.includes('--apply');
 
-const INICIO = new Date('2026-08-03T00:00:00.000Z');
-const FIM = new Date('2026-12-16T00:00:00.000Z');
+// T03:00Z = meia-noite em Brasilia (UTC-3). Gravar T00:00Z faria as datas
+// aparecerem um dia antes na interface.
+const INICIO = new Date('2026-08-03T03:00:00.000Z');
+const FIM = new Date('2026-12-16T03:00:00.000Z');
 
 const NOME_DIA = ['dom', 'seg', 'ter', 'qua', 'qui', 'sex', 'sáb'];
 
@@ -183,7 +185,7 @@ async function main() {
         key: i.key,
         label: i.label,
         weight: i.weight,
-        date: i.date ? new Date(`${i.date}T00:00:00.000Z`) : undefined,
+        date: i.date ? new Date(`${i.date}T03:00:00.000Z`) : undefined,
       })),
       minimumGrade: 6,
       semesterStartDate: INICIO,
