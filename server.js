@@ -36,10 +36,10 @@ app.use(
   cors({
     origin(origin, callback) {
       // Sem Origin = chamada server-to-server (curl, health check), liberada.
-      if (!origin || allowedOrigins.includes(origin)) {
-        return callback(null, true);
-      }
-      return callback(new Error('Origem não permitida pelo CORS'));
+      // Origem desconhecida: responde sem o cabeçalho e deixa o navegador
+      // barrar. Lançar erro aqui cairia no handler global, devolvendo 500 e
+      // gravando um stack trace a cada requisição bloqueada.
+      callback(null, !origin || allowedOrigins.includes(origin));
     },
     credentials: true
   })
