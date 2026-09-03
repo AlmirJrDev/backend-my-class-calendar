@@ -57,6 +57,20 @@ const AVALIACOES = [
   { subject: 'Gerenciamento de Banco de Dados', date: '2026-12-03', type: 'exam', title: 'AV2 — Avaliação 2' },
   // A substitutiva cai depois do fim das aulas regulares (16/12).
   { subject: 'Gerenciamento de Banco de Dados', date: '2026-12-17', type: 'exam', title: 'SUB — Substitutiva' },
+
+  // --- Redes de Computadores ---
+  // O plano de ensino ainda não saiu; esta data foi anunciada pelo professor
+  // em aula. Fica só como evento no calendário: sem o plano não dá para saber
+  // o peso, e chutar um quebraria a soma 1.0 da fórmula de nota.
+  {
+    subject: 'Redes de Computadores',
+    date: '2026-09-17',
+    type: 'exam',
+    title: 'Prova',
+    description:
+      'Redes de Computadores — data anunciada pelo professor em aula. ' +
+      'O plano de ensino ainda não foi divulgado.',
+  },
 ];
 
 // A Prova Interdisciplinar cai em 18/11 em todos os planos: é uma prova só.
@@ -123,7 +137,7 @@ async function main() {
       date: paraData(a.date),
       time,
       subject: a.subject,
-      description: `${a.subject} — conforme plano de ensino 2026/2.`,
+      description: a.description || `${a.subject} — conforme plano de ensino 2026/2.`,
       recurring: false,
       completed: false,
       userId: admin._id,
