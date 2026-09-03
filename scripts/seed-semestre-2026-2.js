@@ -90,7 +90,7 @@ const MATERIAS = [
       { key: 'P2', label: 'Avaliação Teórica 2', weight: 0.3, date: '2026-12-01' },
     ],
   },
-  // Sem plano de ensino recebido: entram com grade e chamada funcionando, mas
+  // Sem plano de ensino recebido: entra com grade e chamada funcionando, mas
   // sem fórmula de nota. O professor e a fórmula saem pelo editor do admin.
   {
     name: 'Redes de Computadores',
@@ -106,10 +106,18 @@ const MATERIAS = [
   {
     name: 'Gerenciamento de Banco de Dados',
     code: 'G00263.1',
-    teacher: 'A definir',
+    teacher: 'Francisco Carlos da Silva',
     color: '#8b5cf6',
     schedule: [{ dayOfWeek: 4, periods: [1, 2, 3] }],
-    gradeFormula: [],
+    gradeFormula: [
+      { key: 'AV1', label: 'Avaliação 1', weight: 0.3, date: '2026-09-24' },
+      { key: 'PI', label: 'Prova Interdisciplinar', weight: 0.1, date: '2026-11-18' },
+      // O plano chama o instrumento de "Seminário"; a chave fica SEM para
+      // acompanhar Fundamentos do Cristianismo e evitar acento em chave.
+      { key: 'SEM', label: 'Seminários', weight: 0.2, date: '2026-11-19' },
+      { key: 'PROIN', label: 'Projeto Integrador', weight: 0.1, date: '2026-11-24' },
+      { key: 'AV2', label: 'Avaliação 2', weight: 0.3, date: '2026-12-03' },
+    ],
   },
 ];
 

@@ -49,17 +49,26 @@ const AVALIACOES = [
   { subject: 'Fundamentos do Cristianismo', date: '2026-11-24', type: 'assignment', title: 'SEM — Seminário' },
   { subject: 'Fundamentos do Cristianismo', date: '2026-12-01', type: 'exam', title: 'P2 — Avaliação Teórica 2' },
   { subject: 'Fundamentos do Cristianismo', date: '2026-12-15', type: 'exam', title: 'SUB — Substitutiva' },
+
+  // --- Gerenciamento de Banco de Dados ---
+  { subject: 'Gerenciamento de Banco de Dados', date: '2026-09-24', type: 'exam', title: 'AV1 — Avaliação 1' },
+  { subject: 'Gerenciamento de Banco de Dados', date: '2026-11-19', type: 'assignment', title: 'SEM — Seminários' },
+  { subject: 'Gerenciamento de Banco de Dados', date: '2026-11-24', type: 'assignment', title: 'ProIn — Projeto Integrador' },
+  { subject: 'Gerenciamento de Banco de Dados', date: '2026-12-03', type: 'exam', title: 'AV2 — Avaliação 2' },
+  // A substitutiva cai depois do fim das aulas regulares (16/12).
+  { subject: 'Gerenciamento de Banco de Dados', date: '2026-12-17', type: 'exam', title: 'SUB — Substitutiva' },
 ];
 
-// A Prova Interdisciplinar cai em 18/11 nos quatro planos: é uma prova só,
-// não quatro. Entra como um evento único, sem matéria.
+// A Prova Interdisciplinar cai em 18/11 em todos os planos: é uma prova só.
+// Entra como um evento único, sem matéria.
 const INTERDISCIPLINAR = {
   date: '2026-11-18',
   type: 'exam',
   title: 'PI — Prova Interdisciplinar',
   description:
     'Prova interdisciplinar comum a Estrutura de Dados II, Probabilidade e ' +
-    'Estatística, Engenharia de Software e Fundamentos do Cristianismo.',
+    'Estatística, Engenharia de Software, Fundamentos do Cristianismo e ' +
+    'Gerenciamento de Banco de Dados.',
 };
 
 function paraData(iso) {
