@@ -2,6 +2,11 @@ const EventSuggestion = require('../models/eventSuggestion');
 const Event = require('../models/event');
 const User = require('../models/user');
 
+const ehModerador = (req) =>
+  req.user.role === 'superadmin' ||
+  (req.turmaIds || []).some((id) => req.papelNaTurma.get(id.toString()) === 'representante');
+
+
 // @desc    Criar sugestão de evento (aluno)
 // @route   POST /api/suggestions
 // @access  Private (Student)
@@ -343,7 +348,7 @@ exports.getSuggestion = async (req, res) => {
     }
 
     // Aluno só pode ver suas próprias sugestões
-    if (req.user.role !== 'admin' && suggestion.userId._id.toString() !== req.user.id) {
+    if (!ehModerador(req) && suggestion.userId._id.toString() !== req.user.id) {
       return res.status(403).json({
         success: false,
         error: 'Acesso negado'
@@ -378,7 +383,7 @@ exports.deleteSuggestion = async (req, res) => {
     }
 
     // Verificar permissão
-    if (req.user.role !== 'admin' && suggestion.userId.toString() !== req.user.id) {
+    if (!ehModerador(req) && suggestion.userId.toString() !== req.user.id) {
       return res.status(403).json({
         success: false,
         error: 'Acesso negado'

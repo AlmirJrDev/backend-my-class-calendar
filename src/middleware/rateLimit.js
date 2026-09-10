@@ -36,3 +36,11 @@ exports.verifyOtpLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   limit: 10
 });
+
+// Convite: o código é curto e a prévia é pública, então dá para tentar
+// adivinhar. Este limite é o que torna a varredura inviável.
+exports.entrarNaTurmaLimiter = rateLimit({
+  ...base,
+  windowMs: 15 * 60 * 1000,
+  limit: 20
+});

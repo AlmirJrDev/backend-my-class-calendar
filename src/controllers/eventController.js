@@ -78,14 +78,6 @@ exports.getEvent = async (req, res) => {
 // @access  Private (Admin)
 exports.createEvent = async (req, res) => {
   try {
-    // Verificar se é admin
-    if (req.user.role !== 'admin') {
-      return res.status(403).json({
-        success: false,
-        error: 'Apenas administradores podem criar eventos. Use o sistema de sugestões para propor novos eventos.'
-      });
-    }
-
     // Sem turma o registro nasce invisível: nenhuma leitura o alcança.
     if (!req.turmaIds || req.turmaIds.length === 0) {
       return res.status(400).json({
@@ -118,14 +110,6 @@ exports.createEvent = async (req, res) => {
 // @access  Private (Admin)
 exports.updateEvent = async (req, res) => {
   try {
-    // Verificar se é admin
-    if (req.user.role !== 'admin') {
-      return res.status(403).json({
-        success: false,
-        error: 'Apenas administradores podem atualizar eventos. Use o sistema de sugestões para propor alterações.'
-      });
-    }
-
     let event = await Event.findOne({
       _id: req.params.id,
       userId: req.user.id
@@ -166,14 +150,6 @@ exports.updateEvent = async (req, res) => {
 // @access  Private (Admin)
 exports.deleteEvent = async (req, res) => {
   try {
-    // Verificar se é admin
-    if (req.user.role !== 'admin') {
-      return res.status(403).json({
-        success: false,
-        error: 'Apenas administradores podem deletar eventos. Use o sistema de sugestões para propor a remoção.'
-      });
-    }
-
     const event = await Event.findOne({
       _id: req.params.id,
       userId: req.user.id
@@ -207,14 +183,6 @@ exports.deleteEvent = async (req, res) => {
 // @access  Private (Admin)
 exports.toggleComplete = async (req, res) => {
   try {
-    // Verificar se é admin
-    if (req.user.role !== 'admin') {
-      return res.status(403).json({
-        success: false,
-        error: 'Apenas administradores podem marcar eventos como concluídos'
-      });
-    }
-
     const event = await Event.findOne({
       _id: req.params.id,
       userId: req.user.id

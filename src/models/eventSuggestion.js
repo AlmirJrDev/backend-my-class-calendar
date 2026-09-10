@@ -1,6 +1,12 @@
 const mongoose = require('mongoose');
 
 const eventSuggestionSchema = new mongoose.Schema({
+  // Turma a que a sugestão pertence: aprovar cria um evento dentro dela.
+  turmaId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Turma',
+    index: true
+  },
   userId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',

@@ -10,20 +10,21 @@ const {
   getSuggestion,
   deleteSuggestion
 } = require('../controllers/suggestionController');
-const { protect, adminOnly } = require('../middleware/auth');
+const { protect } = require('../middleware/auth');
+const { escopoDeTurma, exigeRepresentante } = require('../middleware/turma');
 
-// Aplicar proteção a todas as rotas
-router.use(protect);
+// Toda rota exige sessão e o escopo de turma de quem está pedindo.
+router.use(protect, escopoDeTurma);
 
 // Rotas para estudantes
 router.post('/', createSuggestion);
 router.get('/my-suggestions', getMySuggestions);
 
-// Rotas apenas para admin
-router.get('/pending', adminOnly, getPendingSuggestions);
-router.get('/all', adminOnly, getAllSuggestions);
-router.post('/:id/approve', adminOnly, approveSuggestion);
-router.post('/:id/reject', adminOnly, rejectSuggestion);
+// Moderação: só o representante da turma
+router.get('/pending', exigeRepresentante, getPendingSuggestions);
+router.get('/all', exigeRepresentante, getAllSuggestions);
+router.post('/:id/approve', exigeRepresentante, approveSuggestion);
+router.post('/:id/reject', exigeRepresentante, rejectSuggestion);
 
 // Rotas acessíveis por ambos (com validação interna)
 router.get('/:id', getSuggestion);

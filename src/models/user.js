@@ -17,10 +17,12 @@ const userSchema = new mongoose.Schema({
     required: [true, 'Nome é obrigatório'],
     trim: true
   },
+  // Papel global: superadmin acompanha todas as turmas. Quem representa uma
+  // turma e definido em TurmaMember.role, e nao aqui.
   role: {
     type: String,
-    enum: ['admin', 'student'],
-    default: 'student'
+    enum: ['superadmin', 'user'],
+    default: 'user'
   },
   isVerified: {
     type: Boolean,

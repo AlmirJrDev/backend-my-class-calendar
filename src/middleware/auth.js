@@ -73,17 +73,6 @@ exports.authorize = (...roles) => {
   };
 };
 
-// Middleware específico para admin
-exports.adminOnly = (req, res, next) => {
-  if (req.user.role !== 'admin') {
-    return res.status(403).json({
-      success: false,
-      error: 'Acesso negado. Apenas administradores podem realizar esta ação'
-    });
-  }
-  next();
-};
-
 // Função auxiliar para gerar token JWT
 exports.generateToken = (userId, email, role) => {
   return jwt.sign(

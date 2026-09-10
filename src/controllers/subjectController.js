@@ -72,14 +72,6 @@ exports.getSubject = async (req, res) => {
 // @access  Private (Admin)
 exports.createSubject = async (req, res) => {
   try {
-    // Verificar se é admin
-    if (req.user.role !== 'admin') {
-      return res.status(403).json({
-        success: false,
-        error: 'Apenas administradores podem criar matérias'
-      });
-    }
-
     // Adicionar userId ao corpo da requisição
     // Sem turma o registro nasce invisível: nenhuma leitura o alcança.
     if (!req.turmaIds || req.turmaIds.length === 0) {
@@ -113,14 +105,6 @@ exports.createSubject = async (req, res) => {
 // @access  Private (Admin)
 exports.updateSubject = async (req, res) => {
   try {
-    // Verificar se é admin
-    if (req.user.role !== 'admin') {
-      return res.status(403).json({
-        success: false,
-        error: 'Apenas administradores podem atualizar matérias'
-      });
-    }
-
     let subject = await Subject.findOne({
       _id: req.params.id,
       userId: req.user.id
@@ -161,14 +145,6 @@ exports.updateSubject = async (req, res) => {
 // @access  Private (Admin)
 exports.deleteSubject = async (req, res) => {
   try {
-    // Verificar se é admin
-    if (req.user.role !== 'admin') {
-      return res.status(403).json({
-        success: false,
-        error: 'Apenas administradores podem deletar matérias'
-      });
-    }
-
     const subject = await Subject.findOne({
       _id: req.params.id,
       userId: req.user.id
@@ -202,14 +178,6 @@ exports.deleteSubject = async (req, res) => {
 // @access  Private (Admin)
 exports.toggleActive = async (req, res) => {
   try {
-    // Verificar se é admin
-    if (req.user.role !== 'admin') {
-      return res.status(403).json({
-        success: false,
-        error: 'Apenas administradores podem ativar/desativar matérias'
-      });
-    }
-
     const subject = await Subject.findOne({
       _id: req.params.id,
       userId: req.user.id
