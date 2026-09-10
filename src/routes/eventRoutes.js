@@ -10,12 +10,12 @@ const {
   getEventsByMonth
 } = require('../controllers/eventController');
 
-const { protect, optionalAuth, adminOnly } = require('../middleware/auth');
+const { protect, adminOnly } = require('../middleware/auth');
 
 // Rotas de leitura (públicas com autenticação opcional)
-router.get('/', optionalAuth, getEvents);
-router.get('/month/:year/:month', optionalAuth, getEventsByMonth);
-router.get('/:id', optionalAuth, getEvent);
+router.get('/', protect, getEvents);
+router.get('/month/:year/:month', protect, getEventsByMonth);
+router.get('/:id', protect, getEvent);
 
 // Rotas de escrita (apenas admin autenticado)
 router.post('/', protect, adminOnly, createEvent);

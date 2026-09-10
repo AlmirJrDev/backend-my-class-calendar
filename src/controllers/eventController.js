@@ -7,12 +7,11 @@ exports.getEvents = async (req, res) => {
   try {
     const { startDate, endDate, type } = req.query;
     
-    // Construir filtro base
-    // Se for admin autenticado, mostra seus eventos
-    // Se for aluno autenticado ou não autenticado, mostra TODOS os eventos
-    const filter = req.user && req.user.role === 'admin' 
+    // Admin vê o que criou. Aluno vê tudo porque ainda existe uma turma só —
+    // a fase 2 troca este {} por escopo de turma.
+    const filter = req.user.role === 'admin'
       ? { userId: req.user.id }
-      : {}; // Alunos e visitantes veem todos os eventos
+      : {};
     
     // Adicionar filtros opcionais
     if (startDate && endDate) {
@@ -56,8 +55,8 @@ exports.getEvent = async (req, res) => {
       });
     }
 
-    // Admin autenticado pode ver seus eventos, visitantes e alunos podem ver qualquer evento
-    if (req.user && req.user.role === 'admin' && event.userId.toString() !== req.user.id) {
+    // Admin só acessa o que é dele; aluno acessa qualquer um da turma única.
+    if (req.user.role === 'admin' && event.userId.toString() !== req.user.id) {
       return res.status(403).json({
         success: false,
         error: 'Acesso negado'
@@ -250,8 +249,8 @@ exports.getEventsByMonth = async (req, res) => {
     const startDate = new Date(year, month - 1, 1);
     const endDate = new Date(year, month, 0, 23, 59, 59);
 
-    // Visitantes e alunos veem todos os eventos, admin vê apenas os seus
-    const filter = req.user && req.user.role === 'admin'
+    // Mesma regra do getEvents: {} sai na fase 2, junto com a turma.
+    const filter = req.user.role === 'admin'
       ? { userId: req.user.id }
       : {};
 

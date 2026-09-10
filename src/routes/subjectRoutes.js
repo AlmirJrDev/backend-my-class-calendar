@@ -11,13 +11,13 @@ const {
   getSubjectsByDay
 } = require('../controllers/subjectController');
 
-const { protect, optionalAuth, adminOnly } = require('../middleware/auth');
+const { protect, adminOnly } = require('../middleware/auth');
 
 // Rotas de leitura (públicas com autenticação opcional)
-router.get('/', optionalAuth, getSubjects);
-router.get('/schedule/week', optionalAuth, getWeekSchedule);
-router.get('/day/:dayOfWeek', optionalAuth, getSubjectsByDay);
-router.get('/:id', optionalAuth, getSubject);
+router.get('/', protect, getSubjects);
+router.get('/schedule/week', protect, getWeekSchedule);
+router.get('/day/:dayOfWeek', protect, getSubjectsByDay);
+router.get('/:id', protect, getSubject);
 
 // Rotas de escrita (apenas admin autenticado)
 router.post('/', protect, adminOnly, createSubject);

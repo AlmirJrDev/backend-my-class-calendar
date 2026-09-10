@@ -7,10 +7,11 @@ exports.getSubjects = async (req, res) => {
   try {
     const { active } = req.query;
     
-    // Construir filtro
-    const filter = req.user && req.user.role === 'admin' 
+    // Admin vê o que criou. Aluno vê tudo porque ainda existe uma turma só —
+    // a fase 2 troca este {} por escopo de turma.
+    const filter = req.user.role === 'admin'
       ? { userId: req.user.id }
-      : {}; // Visitantes e alunos veem todas as matérias
+      : {};
     
     // Filtrar por status ativo/inativo se especificado
     if (active !== undefined) {
@@ -48,7 +49,7 @@ exports.getSubject = async (req, res) => {
     }
 
     // Admin autenticado pode ver suas matérias, visitantes e alunos podem ver qualquer matéria
-    if (req.user && req.user.role === 'admin' && subject.userId.toString() !== req.user.id) {
+    if (req.user.role === 'admin' && subject.userId.toString() !== req.user.id) {
       return res.status(403).json({
         success: false,
         error: 'Acesso negado'
