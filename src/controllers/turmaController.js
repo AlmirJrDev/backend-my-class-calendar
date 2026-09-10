@@ -206,3 +206,72 @@ exports.removerMembro = async (req, res) => {
     erro(res, 500, 'Erro ao remover o membro', e);
   }
 };
+
+// @desc    Estado do link publico de leitura
+// @route   GET /api/turmas/:id/compartilhamento
+exports.verCompartilhamento = async (req, res) => {
+  try {
+    if ((await papelEm(req.params.id, req.user.id)) !== 'representante') {
+      return erro(res, 403, 'Apenas o representante gerencia o link');
+    }
+
+    const turma = await Turma.findById(req.params.id).select('+shareToken');
+    if (!turma) return erro(res, 404, 'Turma não encontrada');
+
+    res.status(200).json({
+      success: true,
+      data: { ativo: Boolean(turma.shareToken), token: turma.shareToken || null }
+    });
+  } catch (e) {
+    erro(res, 500, 'Erro ao ler o compartilhamento', e);
+  }
+};
+
+// @desc    Liga o link ou gera um novo, invalidando o anterior
+// @route   POST /api/turmas/:id/compartilhamento
+exports.ligarCompartilhamento = async (req, res) => {
+  try {
+    if ((await papelEm(req.params.id, req.user.id)) !== 'representante') {
+      return erro(res, 403, 'Apenas o representante gerencia o link');
+    }
+
+    const turma = await Turma.findById(req.params.id).select('+shareToken');
+    if (!turma) return erro(res, 404, 'Turma não encontrada');
+
+    const jaTinha = Boolean(turma.shareToken);
+    turma.rotateShareToken();
+    await turma.save();
+
+    res.status(200).json({
+      success: true,
+      message: jaTinha ? 'O link anterior deixou de funcionar' : 'Link criado',
+      data: { ativo: true, token: turma.shareToken }
+    });
+  } catch (e) {
+    erro(res, 500, 'Erro ao gerar o link', e);
+  }
+};
+
+// @desc    Desliga o link; quem tiver o endereco antigo perde o acesso
+// @route   DELETE /api/turmas/:id/compartilhamento
+exports.desligarCompartilhamento = async (req, res) => {
+  try {
+    if ((await papelEm(req.params.id, req.user.id)) !== 'representante') {
+      return erro(res, 403, 'Apenas o representante gerencia o link');
+    }
+
+    const turma = await Turma.findById(req.params.id).select('+shareToken');
+    if (!turma) return erro(res, 404, 'Turma não encontrada');
+
+    turma.disableSharing();
+    await turma.save();
+
+    res.status(200).json({
+      success: true,
+      message: 'Compartilhamento desligado',
+      data: { ativo: false, token: null }
+    });
+  } catch (e) {
+    erro(res, 500, 'Erro ao desligar o link', e);
+  }
+};

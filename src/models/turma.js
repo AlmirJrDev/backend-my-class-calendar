@@ -34,6 +34,17 @@ const turmaSchema = new mongoose.Schema(
       select: false,
       default: () => crypto.randomBytes(9).toString('base64url')
     },
+    // Link de leitura do calendário. É PROPOSITALMENTE separado do
+    // inviteCode: quem recebe o link de olhar não pode virar membro. Nulo
+    // enquanto o representante não liga o compartilhamento.
+    shareToken: {
+      type: String,
+      unique: true,
+      sparse: true,
+      index: true,
+      select: false,
+      default: null
+    },
     active: {
       type: Boolean,
       default: true
@@ -48,6 +59,20 @@ turmaSchema.index({ ownerId: 1, active: 1 });
 turmaSchema.methods.rotateInviteCode = function () {
   this.inviteCode = crypto.randomBytes(9).toString('base64url');
   return this.inviteCode;
+};
+
+/**
+ * Liga ou renova o link de leitura. O token é mais longo que o do convite
+ * porque fica exposto em qualquer lugar onde o link for colado.
+ */
+turmaSchema.methods.rotateShareToken = function () {
+  this.shareToken = crypto.randomBytes(16).toString('base64url');
+  return this.shareToken;
+};
+
+/** Desliga o compartilhamento; o link existente para de funcionar. */
+turmaSchema.methods.disableSharing = function () {
+  this.shareToken = null;
 };
 
 module.exports = mongoose.model('Turma', turmaSchema);

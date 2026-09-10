@@ -55,6 +55,7 @@ app.use('/api', apiLimiter);
 // Rotas
 app.use('/api/auth', require('./src/routes/authRoutes'));
 app.use('/api/turmas', require('./src/routes/turmaRoutes'));
+app.use('/api/publico', require('./src/routes/publicoRoutes'));
 app.use('/api/events', require('./src/routes/eventRoutes'));
 app.use('/api/suggestions', require('./src/routes/suggestionsRoutes'));
 app.use('/api/subjects', require('./src/routes/subjectRoutes'));
@@ -70,6 +71,7 @@ app.get('/', (req, res) => {
     endpoints: {
       auth: '/api/auth',
       turmas: '/api/turmas',
+      publico: '/api/publico/:token',
       events: '/api/events',
       suggestions: '/api/suggestions',
       subjects: '/api/subjects',

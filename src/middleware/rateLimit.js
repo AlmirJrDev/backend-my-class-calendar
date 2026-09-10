@@ -44,3 +44,11 @@ exports.entrarNaTurmaLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   limit: 20
 });
+
+// Link publico de leitura: aberto por definicao, entao o limite e o que
+// impede varredura de tokens.
+exports.linkPublicoLimiter = rateLimit({
+  ...base,
+  windowMs: 15 * 60 * 1000,
+  limit: 120
+});

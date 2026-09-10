@@ -8,7 +8,10 @@ const {
   previaDoConvite,
   entrarComConvite,
   listarMembros,
-  removerMembro
+  removerMembro,
+  verCompartilhamento,
+  ligarCompartilhamento,
+  desligarCompartilhamento
 } = require('../controllers/turmaController');
 const { protect } = require('../middleware/auth');
 const { entrarNaTurmaLimiter } = require('../middleware/rateLimit');
@@ -25,6 +28,10 @@ router.post('/entrar', entrarNaTurmaLimiter, entrarComConvite);
 
 router.get('/:id/convite', verConvite);
 router.post('/:id/convite/rotacionar', rotacionarConvite);
+
+router.get('/:id/compartilhamento', verCompartilhamento);
+router.post('/:id/compartilhamento', ligarCompartilhamento);
+router.delete('/:id/compartilhamento', desligarCompartilhamento);
 
 router.get('/:id/membros', listarMembros);
 router.delete('/:id/membros/:userId', removerMembro);
