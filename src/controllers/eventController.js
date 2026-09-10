@@ -1,17 +1,15 @@
 const Event = require('../models/event');
+const { filtroDeTurma, pertenceAoUsuario } = require('../middleware/turma');
 
 // @desc    Obter todos os eventos (público para visualização)
 // @route   GET /api/events
-// @access  Public
+// @access  Membros da turma
 exports.getEvents = async (req, res) => {
   try {
     const { startDate, endDate, type } = req.query;
     
-    // Admin vê o que criou. Aluno vê tudo porque ainda existe uma turma só —
-    // a fase 2 troca este {} por escopo de turma.
-    const filter = req.user.role === 'admin'
-      ? { userId: req.user.id }
-      : {};
+    // Só as turmas de que a pessoa participa.
+    const filter = filtroDeTurma(req);
     
     // Adicionar filtros opcionais
     if (startDate && endDate) {
@@ -43,7 +41,7 @@ exports.getEvents = async (req, res) => {
 
 // @desc    Obter um evento específico
 // @route   GET /api/events/:id
-// @access  Public
+// @access  Membros da turma
 exports.getEvent = async (req, res) => {
   try {
     const event = await Event.findById(req.params.id);
@@ -55,8 +53,7 @@ exports.getEvent = async (req, res) => {
       });
     }
 
-    // Admin só acessa o que é dele; aluno acessa qualquer um da turma única.
-    if (req.user.role === 'admin' && event.userId.toString() !== req.user.id) {
+    if (!pertenceAoUsuario(req, event)) {
       return res.status(403).json({
         success: false,
         error: 'Acesso negado'
@@ -89,8 +86,16 @@ exports.createEvent = async (req, res) => {
       });
     }
 
-    // Adicionar userId ao corpo da requisição
+    // Sem turma o registro nasce invisível: nenhuma leitura o alcança.
+    if (!req.turmaIds || req.turmaIds.length === 0) {
+      return res.status(400).json({
+        success: false,
+        error: 'Você precisa pertencer a uma turma para criar'
+      });
+    }
+
     req.body.userId = req.user.id;
+    req.body.turmaId = req.turmaIds[0];
 
     const event = await Event.create(req.body);
 
@@ -241,7 +246,7 @@ exports.toggleComplete = async (req, res) => {
 
 // @desc    Obter eventos do mês
 // @route   GET /api/events/month/:year/:month
-// @access  Public
+// @access  Membros da turma
 exports.getEventsByMonth = async (req, res) => {
   try {
     const { year, month } = req.params;
@@ -249,10 +254,7 @@ exports.getEventsByMonth = async (req, res) => {
     const startDate = new Date(year, month - 1, 1);
     const endDate = new Date(year, month, 0, 23, 59, 59);
 
-    // Mesma regra do getEvents: {} sai na fase 2, junto com a turma.
-    const filter = req.user.role === 'admin'
-      ? { userId: req.user.id }
-      : {};
+    const filter = filtroDeTurma(req);
 
     filter.date = {
       $gte: startDate,

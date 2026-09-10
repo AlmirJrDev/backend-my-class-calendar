@@ -1,17 +1,15 @@
 const Subject = require('../models/subject');
+const { filtroDeTurma, pertenceAoUsuario } = require('../middleware/turma');
 
 // @desc    Obter todas as matérias
 // @route   GET /api/subjects
-// @access  Public
+// @access  Membros da turma
 exports.getSubjects = async (req, res) => {
   try {
     const { active } = req.query;
     
-    // Admin vê o que criou. Aluno vê tudo porque ainda existe uma turma só —
-    // a fase 2 troca este {} por escopo de turma.
-    const filter = req.user.role === 'admin'
-      ? { userId: req.user.id }
-      : {};
+    // Só as turmas de que a pessoa participa.
+    const filter = filtroDeTurma(req);
     
     // Filtrar por status ativo/inativo se especificado
     if (active !== undefined) {
@@ -36,7 +34,7 @@ exports.getSubjects = async (req, res) => {
 
 // @desc    Obter uma matéria específica
 // @route   GET /api/subjects/:id
-// @access  Public
+// @access  Membros da turma
 exports.getSubject = async (req, res) => {
   try {
     const subject = await Subject.findById(req.params.id);
@@ -49,7 +47,7 @@ exports.getSubject = async (req, res) => {
     }
 
     // Admin autenticado pode ver suas matérias, visitantes e alunos podem ver qualquer matéria
-    if (req.user.role === 'admin' && subject.userId.toString() !== req.user.id) {
+    if (!pertenceAoUsuario(req, subject)) {
       return res.status(403).json({
         success: false,
         error: 'Acesso negado'
@@ -83,7 +81,16 @@ exports.createSubject = async (req, res) => {
     }
 
     // Adicionar userId ao corpo da requisição
+    // Sem turma o registro nasce invisível: nenhuma leitura o alcança.
+    if (!req.turmaIds || req.turmaIds.length === 0) {
+      return res.status(400).json({
+        success: false,
+        error: 'Você precisa pertencer a uma turma para criar'
+      });
+    }
+
     req.body.userId = req.user.id;
+    req.body.turmaId = req.turmaIds[0];
 
     const subject = await Subject.create(req.body);
 
@@ -234,13 +241,10 @@ exports.toggleActive = async (req, res) => {
 
 // @desc    Obter grade horária completa
 // @route   GET /api/subjects/schedule/week
-// @access  Public
+// @access  Membros da turma
 exports.getWeekSchedule = async (req, res) => {
   try {
-    // Construir filtro
-    const filter = req.user && req.user.role === 'admin' 
-      ? { userId: req.user.id, active: true }
-      : { active: true };
+    const filter = { ...filtroDeTurma(req), active: true };
 
     const subjects = await Subject.find(filter);
 
@@ -290,7 +294,7 @@ exports.getWeekSchedule = async (req, res) => {
 
 // @desc    Obter matérias por dia da semana
 // @route   GET /api/subjects/day/:dayOfWeek
-// @access  Public
+// @access  Membros da turma
 exports.getSubjectsByDay = async (req, res) => {
   try {
     const { dayOfWeek } = req.params;
@@ -303,10 +307,7 @@ exports.getSubjectsByDay = async (req, res) => {
       });
     }
 
-    // Construir filtro
-    const filter = req.user && req.user.role === 'admin' 
-      ? { userId: req.user.id, active: true, 'schedule.dayOfWeek': day }
-      : { active: true, 'schedule.dayOfWeek': day };
+    const filter = { ...filtroDeTurma(req), active: true, 'schedule.dayOfWeek': day };
 
     const subjects = await Subject.find(filter);
 

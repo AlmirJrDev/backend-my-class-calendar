@@ -1,6 +1,13 @@
 const mongoose = require('mongoose');
 
 const eventSchema = new mongoose.Schema({
+  // Turma dona do registro. Opcional enquanto a migração roda; depois que
+  // todo documento tiver uma, vira obrigatório.
+  turmaId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Turma',
+    index: true
+  },
   title: {
     type: String,
     required: [true, 'O título é obrigatório'],
