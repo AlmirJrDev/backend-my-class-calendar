@@ -49,3 +49,28 @@ describe('gerenciaTurma', () => {
     expect(gerenciaTurma(req({}, 'superadmin'), TURMA_A)).toBe(true);
   });
 });
+
+describe('podeApagarNota', () => {
+  const { podeApagarNota } = require('../eventoService');
+  const nota = { userId: 'autor', turmaId: TURMA_A };
+
+  it('quem escreveu apaga a própria', () => {
+    const r = { user: { id: 'autor', role: 'user' }, papelNaTurma: new Map([[TURMA_A, 'aluno']]) };
+    expect(podeApagarNota(r, nota)).toBe(true);
+  });
+
+  it('funciona com o autor já populado', () => {
+    const r = { user: { id: 'autor', role: 'user' }, papelNaTurma: new Map([[TURMA_A, 'aluno']]) };
+    expect(podeApagarNota(r, { ...nota, userId: { _id: 'autor', name: 'Ana' } })).toBe(true);
+  });
+
+  it('colega aluno não apaga a de outra pessoa', () => {
+    const r = { user: { id: 'colega', role: 'user' }, papelNaTurma: new Map([[TURMA_A, 'aluno']]) };
+    expect(podeApagarNota(r, nota)).toBe(false);
+  });
+
+  it('representante da turma apaga qualquer uma', () => {
+    const r = { user: { id: 'rep', role: 'user' }, papelNaTurma: new Map([[TURMA_A, 'representante']]) };
+    expect(podeApagarNota(r, nota)).toBe(true);
+  });
+});

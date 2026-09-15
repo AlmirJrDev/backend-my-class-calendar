@@ -1,4 +1,5 @@
 const Event = require('../models/event');
+const EventNote = require('../models/eventNote');
 const { filtroDeTurma, pertenceAoUsuario } = require('../middleware/turma');
 const { camposDoEvento, gerenciaTurma } = require('../services/eventoService');
 
@@ -170,6 +171,8 @@ exports.deleteEvent = async (req, res) => {
     }
 
     await Event.findByIdAndDelete(req.params.id);
+    // Observações sem evento não aparecem em lugar nenhum; não ficam para trás.
+    await EventNote.deleteMany({ eventId: event._id });
 
     res.status(200).json({
       success: true,

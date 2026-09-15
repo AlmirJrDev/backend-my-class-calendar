@@ -35,3 +35,8 @@ exports.gerenciaTurma = (req, turmaId) => {
   if (!turmaId || !req.papelNaTurma) return false;
   return req.papelNaTurma.get(turmaId.toString()) === 'representante';
 };
+
+/** Quem escreveu a observação apaga a própria; o representante apaga qualquer uma. */
+exports.podeApagarNota = (req, nota) =>
+  String(nota.userId?._id ?? nota.userId) === String(req.user?.id) ||
+  exports.gerenciaTurma(req, nota.turmaId);
