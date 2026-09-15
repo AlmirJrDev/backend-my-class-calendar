@@ -36,14 +36,11 @@ const turmaSchema = new mongoose.Schema(
     },
     // Link de leitura do calendário. É PROPOSITALMENTE separado do
     // inviteCode: quem recebe o link de olhar não pode virar membro. Nulo
-    // enquanto o representante não liga o compartilhamento.
+    // enquanto o representante não liga o compartilhamento — sem valor
+    // padrão: o índice único está logo abaixo.
     shareToken: {
       type: String,
-      unique: true,
-      sparse: true,
-      index: true,
-      select: false,
-      default: null
+      select: false
     },
     active: {
       type: Boolean,
@@ -54,6 +51,18 @@ const turmaSchema = new mongoose.Schema(
 );
 
 turmaSchema.index({ ownerId: 1, active: 1 });
+
+// Único só entre tokens de verdade. `sparse` não bastava: ele ignora o campo
+// ausente, mas não o `null`, e com todas as turmas sem compartilhamento
+// guardando null a segunda turma criada batia no índice e falhava.
+turmaSchema.index(
+  { shareToken: 1 },
+  {
+    name: 'shareToken_1',
+    unique: true,
+    partialFilterExpression: { shareToken: { $type: 'string' } }
+  }
+);
 
 /** Gera um convite novo, invalidando o link anterior. */
 turmaSchema.methods.rotateInviteCode = function () {
@@ -72,7 +81,7 @@ turmaSchema.methods.rotateShareToken = function () {
 
 /** Desliga o compartilhamento; o link existente para de funcionar. */
 turmaSchema.methods.disableSharing = function () {
-  this.shareToken = null;
+  this.shareToken = undefined;
 };
 
 module.exports = mongoose.model('Turma', turmaSchema);
