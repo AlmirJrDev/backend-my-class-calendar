@@ -1,5 +1,6 @@
 const Event = require('../models/event');
 const { filtroDeTurma, pertenceAoUsuario } = require('../middleware/turma');
+const { camposDoEvento, gerenciaTurma } = require('../services/eventoService');
 
 // @desc    Obter todos os eventos (público para visualização)
 // @route   GET /api/events
@@ -86,10 +87,25 @@ exports.createEvent = async (req, res) => {
       });
     }
 
-    req.body.userId = req.user.id;
-    req.body.turmaId = req.turmaIds[0];
+    // Com várias turmas e nenhuma escolhida, "a primeira" poderia ser uma em
+    // que a pessoa é só aluno.
+    if (req.turmaIds.length !== 1) {
+      return res.status(400).json({ success: false, error: 'Escolha a turma do evento' });
+    }
 
-    const event = await Event.create(req.body);
+    const turmaId = req.turmaIds[0];
+    if (!gerenciaTurma(req, turmaId)) {
+      return res.status(403).json({
+        success: false,
+        error: 'Apenas o representante da turma pode fazer isso'
+      });
+    }
+
+    const event = await Event.create({
+      ...camposDoEvento(req.body),
+      turmaId,
+      userId: req.user.id
+    });
 
     res.status(201).json({
       success: true,
@@ -110,26 +126,20 @@ exports.createEvent = async (req, res) => {
 // @access  Private (Admin)
 exports.updateEvent = async (req, res) => {
   try {
-    let event = await Event.findOne({
-      _id: req.params.id,
-      userId: req.user.id
-    });
+    // Qualquer representante da turma edita — não só quem criou.
+    const event = await Event.findOne({ _id: req.params.id, ...filtroDeTurma(req) });
 
-    if (!event) {
+    if (!event || !gerenciaTurma(req, event.turmaId)) {
       return res.status(404).json({
         success: false,
         error: 'Evento não encontrado'
       });
     }
 
-    event = await Event.findByIdAndUpdate(
-      req.params.id,
-      req.body,
-      {
-        new: true,
-        runValidators: true
-      }
-    );
+    // save() em vez de findByIdAndUpdate: roda também a validação dos dias da
+    // semana em evento recorrente.
+    event.set(camposDoEvento(req.body));
+    await event.save();
 
     res.status(200).json({
       success: true,
@@ -150,12 +160,9 @@ exports.updateEvent = async (req, res) => {
 // @access  Private (Admin)
 exports.deleteEvent = async (req, res) => {
   try {
-    const event = await Event.findOne({
-      _id: req.params.id,
-      userId: req.user.id
-    });
+    const event = await Event.findOne({ _id: req.params.id, ...filtroDeTurma(req) });
 
-    if (!event) {
+    if (!event || !gerenciaTurma(req, event.turmaId)) {
       return res.status(404).json({
         success: false,
         error: 'Evento não encontrado'
@@ -183,12 +190,9 @@ exports.deleteEvent = async (req, res) => {
 // @access  Private (Admin)
 exports.toggleComplete = async (req, res) => {
   try {
-    const event = await Event.findOne({
-      _id: req.params.id,
-      userId: req.user.id
-    });
+    const event = await Event.findOne({ _id: req.params.id, ...filtroDeTurma(req) });
 
-    if (!event) {
+    if (!event || !gerenciaTurma(req, event.turmaId)) {
       return res.status(404).json({
         success: false,
         error: 'Evento não encontrado'

@@ -63,7 +63,7 @@ exports.eventosCompartilhados = async (req, res) => {
       turmaId: turma._id,
       date: { $gte: inicio, $lte: fim }
     })
-      .select('title type date time subject description recurring daysOfWeek')
+      .select('title type date time endTime location subject description recurring daysOfWeek')
       .sort({ date: 1, time: 1 })
       .lean();
 

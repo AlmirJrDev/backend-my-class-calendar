@@ -26,6 +26,18 @@ const eventSchema = new mongoose.Schema({
     type: String,
     trim: true
   },
+  // Término, no mesmo formato HH:mm de `time`.
+  endTime: {
+    type: String,
+    trim: true,
+    match: [/^([01]\d|2[0-3]):[0-5]\d$/, 'Horário de término inválido']
+  },
+  // Sala, laboratório ou link — o que a turma precisa saber para chegar.
+  location: {
+    type: String,
+    trim: true,
+    maxlength: [120, 'Local muito longo']
+  },
   subject: {
     type: String,
     trim: true
