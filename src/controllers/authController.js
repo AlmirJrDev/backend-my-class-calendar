@@ -53,10 +53,12 @@ exports.register = async (req, res) => {
         });
       }
     } else {
+      // Sem role: o padrão do modelo é "user". O papel de representante é por
+      // turma, em TurmaMember — e "student" deixou de existir no enum, o que
+      // fazia todo cadastro novo falhar com erro 500.
       user = await User.create({
         email: email.toLowerCase(),
-        name,
-        role: 'student'
+        name
       });
     }
 
@@ -130,6 +132,15 @@ exports.register = async (req, res) => {
       });
     }
   } catch (error) {
+    // Dado inválido é erro de quem enviou: devolve o motivo, senão a tela só
+    // mostra "erro ao registrar" e a pessoa não sabe o que corrigir.
+    if (error.name === 'ValidationError') {
+      return res.status(400).json({
+        success: false,
+        error: Object.values(error.errors)[0]?.message || 'Dados inválidos'
+      });
+    }
+
     res.status(500).json({
       success: false,
       error: 'Erro ao registrar usuário',
