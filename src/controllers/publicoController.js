@@ -73,6 +73,27 @@ exports.eventosCompartilhados = async (req, res) => {
   }
 };
 
+// @desc    Matérias da turma do link, com a grade e as datas do semestre
+// @route   GET /api/publico/:token/materias
+exports.materiasCompartilhadas = async (req, res) => {
+  try {
+    const turma = await turmaPeloToken(req.params.token);
+    if (!turma) return erro(res, 404, 'Link inválido ou desativado');
+
+    // O mesmo formato que a tela com sessão recebe, para o calendário marcar
+    // as aulas do dia com a mesma regra — inclusive as datas do semestre, sem
+    // as quais apareceria aula nas férias.
+    const materias = await Subject.find({ turmaId: turma._id, active: true })
+      .select('name color schedule semesterStartDate semesterEndDate')
+      .sort({ name: 1 })
+      .lean();
+
+    res.status(200).json({ success: true, count: materias.length, data: materias });
+  } catch (e) {
+    erro(res, 500, 'Erro ao buscar as matérias', e);
+  }
+};
+
 // @desc    Grade horária da semana da turma do link
 // @route   GET /api/publico/:token/grade
 exports.gradeCompartilhada = async (req, res) => {

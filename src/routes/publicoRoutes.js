@@ -3,7 +3,8 @@ const router = express.Router();
 const {
   turmaCompartilhada,
   eventosCompartilhados,
-  gradeCompartilhada
+  gradeCompartilhada,
+  materiasCompartilhadas
 } = require('../controllers/publicoController');
 const { linkPublicoLimiter } = require('../middleware/rateLimit');
 
@@ -14,5 +15,6 @@ router.use(linkPublicoLimiter);
 router.get('/:token', turmaCompartilhada);
 router.get('/:token/eventos/:ano/:mes', eventosCompartilhados);
 router.get('/:token/grade', gradeCompartilhada);
+router.get('/:token/materias', materiasCompartilhadas);
 
 module.exports = router;
