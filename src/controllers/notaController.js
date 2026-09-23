@@ -26,6 +26,9 @@ const paraResposta = (req, nota) => ({
   text: nota.text,
   createdAt: nota.createdAt,
   autor: (nota.userId?.name || 'Alguém da turma').split(' ')[0],
+  // Id de quem escreveu: a interface desenha o avatar a partir dele, e é o
+  // mesmo valor usado na lista de membros, para o rosto não mudar de tela.
+  autorId: String(nota.userId?._id ?? nota.userId),
   minha: String(nota.userId?._id ?? nota.userId) === String(req.user.id),
   podeApagar: podeApagarNota(req, nota)
 });
