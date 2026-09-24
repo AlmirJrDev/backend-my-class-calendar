@@ -61,6 +61,7 @@ app.use('/api/suggestions', require('./src/routes/suggestionsRoutes'));
 app.use('/api/subjects', require('./src/routes/subjectRoutes'));
 app.use('/api/grades', require('./src/routes/gradeRoutes'));
 app.use('/api/attendance', require('./src/routes/attendanceRoutes'));
+app.use('/api/chamadas', require('./src/routes/chamadaRoutes'));
 
 // Rota de teste
 app.get('/', (req, res) => {
