@@ -28,6 +28,13 @@ exports.horarioTipico = (minutosRecentes = []) => {
   return { minutoDoDia: mediana, amostras: amostra.length };
 };
 
+/**
+ * Quem avisou desfaz o próprio aviso; o representante desfaz qualquer um —
+ * um toque errado entra na conta do horário típico e precisa sair de lá.
+ */
+exports.podeDesfazer = (req, chamada, ehRepresentante) =>
+  String(chamada.userId) === String(req.user?.id) || Boolean(ehRepresentante);
+
 /** "19:22" a partir dos minutos desde a meia-noite. */
 exports.comoHora = (minutoDoDia) =>
   `${String(Math.floor(minutoDoDia / 60)).padStart(2, '0')}:${String(minutoDoDia % 60).padStart(2, '0')}`;

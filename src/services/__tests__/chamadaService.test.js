@@ -35,3 +35,20 @@ describe('comoHora', () => {
     expect(comoHora(0)).toBe('00:00');
   });
 });
+
+describe('podeDesfazer', () => {
+  const { podeDesfazer } = require('../chamadaService');
+  const aviso = { userId: 'quem-avisou' };
+
+  it('quem avisou desfaz o próprio', () => {
+    expect(podeDesfazer({ user: { id: 'quem-avisou' } }, aviso, false)).toBe(true);
+  });
+
+  it('colega não desfaz o aviso de outra pessoa', () => {
+    expect(podeDesfazer({ user: { id: 'colega' } }, aviso, false)).toBe(false);
+  });
+
+  it('representante desfaz qualquer um', () => {
+    expect(podeDesfazer({ user: { id: 'colega' } }, aviso, true)).toBe(true);
+  });
+});

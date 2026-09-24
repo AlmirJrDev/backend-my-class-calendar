@@ -3,7 +3,8 @@ const router = express.Router();
 const {
   avisarChamada,
   horariosTipicos,
-  chamadasDeHoje
+  chamadasDeHoje,
+  desfazerChamada
 } = require('../controllers/chamadaController');
 const { protect } = require('../middleware/auth');
 const { escopoDeTurma } = require('../middleware/turma');
@@ -15,5 +16,6 @@ router.use(protect, escopoDeTurma);
 router.post('/', avisarChamada);
 router.get('/horarios', horariosTipicos);
 router.get('/hoje', chamadasDeHoje);
+router.delete('/:id', desfazerChamada);
 
 module.exports = router;

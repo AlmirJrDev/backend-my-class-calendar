@@ -2,7 +2,8 @@ const mongoose = require('mongoose');
 const Chamada = require('../models/chamada');
 const Subject = require('../models/subject');
 const { filtroDeTurma } = require('../middleware/turma');
-const { horarioTipico, comoHora, minutoDoDia } = require('../services/chamadaService');
+const { horarioTipico, comoHora, minutoDoDia, podeDesfazer } = require('../services/chamadaService');
+const { gerenciaTurma } = require('../services/eventoService');
 
 const erro = (res, status, mensagem, e) =>
   res.status(status).json({
@@ -111,18 +112,41 @@ exports.chamadasDeHoje = async (req, res) => {
     const dia = new Date(agora.getFullYear(), agora.getMonth(), agora.getDate());
 
     const avisos = await Chamada.find({ ...filtroDeTurma(req), dia })
-      .select('subjectId period minutoDoDia')
+      .select('subjectId period minutoDoDia turmaId userId')
       .lean();
 
     res.status(200).json({
       success: true,
       data: avisos.map((a) => ({
+        _id: String(a._id),
         subjectId: String(a.subjectId),
         period: a.period,
-        horario: comoHora(a.minutoDoDia)
+        horario: comoHora(a.minutoDoDia),
+        podeDesfazer: podeDesfazer(req, a, gerenciaTurma(req, a.turmaId))
       }))
     });
   } catch (e) {
     erro(res, 500, 'Erro ao buscar os avisos de hoje', e);
+  }
+};
+
+// @desc    Desfazer um aviso de chamada
+// @route   DELETE /api/chamadas/:id
+// @access  Quem avisou, ou o representante da turma
+exports.desfazerChamada = async (req, res) => {
+  try {
+    if (!mongoose.isValidObjectId(req.params.id)) return erro(res, 404, 'Aviso não encontrado');
+
+    const chamada = await Chamada.findOne({ _id: req.params.id, ...filtroDeTurma(req) });
+    if (!chamada) return erro(res, 404, 'Aviso não encontrado');
+
+    if (!podeDesfazer(req, chamada, gerenciaTurma(req, chamada.turmaId))) {
+      return erro(res, 403, 'Só quem avisou ou o representante pode desfazer');
+    }
+
+    await chamada.deleteOne();
+    res.status(200).json({ success: true, message: 'Aviso desfeito', data: {} });
+  } catch (e) {
+    erro(res, 500, 'Erro ao desfazer o aviso', e);
   }
 };
