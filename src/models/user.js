@@ -35,6 +35,13 @@ const userSchema = new mongoose.Schema({
     type: Number,
     default: 0
   },
+  // Segredo do link de assinatura do calendário (Google Agenda, iPhone). Fica
+  // na URL que a pessoa cola no app de calendário, por isso é longo, fora das
+  // respostas e trocável. Sem valor padrão: o índice único é parcial.
+  calendarToken: {
+    type: String,
+    select: false
+  },
   createdAt: {
     type: Date,
     default: Date.now
@@ -42,5 +49,11 @@ const userSchema = new mongoose.Schema({
 });
 
 userSchema.index({ role: 1 });
+// Único só entre tokens de verdade — sem isso, todo usuário sem link contaria
+// como o mesmo valor vazio (o erro que o shareToken das turmas já teve).
+userSchema.index(
+  { calendarToken: 1 },
+  { unique: true, partialFilterExpression: { calendarToken: { $type: 'string' } } }
+);
 
 module.exports = mongoose.model('User', userSchema);
