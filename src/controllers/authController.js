@@ -24,10 +24,14 @@ const createEmailTransporter = () => {
 // FROM_NAME/FROM_EMAIL nem sempre estão definidos no ambiente; sem o fallback
 // o cabeçalho vira "undefined <undefined>" e o SMTP rejeita o envio.
 const emailFrom = () => {
-  const name = process.env.FROM_NAME || 'Calendário de Aulas';
+  const name = process.env.FROM_NAME || 'My Class Calendar';
   const address = process.env.FROM_EMAIL || process.env.EMAIL_USER;
   return `${name} <${address}>`;
 };
+
+// Resposta vai para uma caixa que alguém lê. Filtro de spam desconfia de
+// remetente que não pode receber resposta.
+const emailReplyTo = () => process.env.REPLY_TO_EMAIL || process.env.FROM_EMAIL || process.env.EMAIL_USER;
 
 // @desc    Registrar novo usuário (estudante)
 // @route   POST /api/auth/register
@@ -78,8 +82,19 @@ exports.register = async (req, res) => {
 
       await transporter.sendMail({
         from: emailFrom(),
+        replyTo: emailReplyTo(),
         to: user.email,
-        subject: 'Verificação de Email - Calendário de Aulas',
+        subject: 'Confirme seu e-mail no My Class Calendar',
+        // Versão em texto puro: mensagem só com HTML é sinal de spam para os
+        // filtros, e alguns leitores de e-mail só mostram o texto.
+        text: [
+          `Olá, ${user.name}!`,
+          '',
+          'Para ativar sua conta no My Class Calendar, abra o link abaixo:',
+          verificationUrl,
+          '',
+          'O link vale por 24 horas. Se você não se cadastrou, ignore este e-mail.',
+        ].join('\n'),
         html: `
           <!DOCTYPE html>
           <html>
@@ -95,7 +110,7 @@ exports.register = async (req, res) => {
             </head>
             <body>
               <div class="container">
-                <div class="header"><h1>📚 Bem-vindo!</h1></div>
+                <div class="header"><h1>Bem-vindo!</h1></div>
                 <div class="content">
                   <h2>Olá ${user.name}!</h2>
                   <p>Você está a um passo de acessar o sistema de calendário de aulas.</p>
@@ -252,8 +267,20 @@ exports.requestAccess = async (req, res) => {
 
       await transporter.sendMail({
         from: emailFrom(),
+        replyTo: emailReplyTo(),
         to: user.email,
-        subject: 'Seu código de acesso - Calendário de Aulas',
+        subject: `${otp} é seu código de acesso ao My Class Calendar`,
+        text: [
+          `Olá, ${user.name}!`,
+          '',
+          `Seu código de acesso é: ${otp}`,
+          'Ele expira em 15 minutos.',
+          '',
+          'Ou entre direto por este link:',
+          accessUrl,
+          '',
+          'Se você não pediu este acesso, ignore este e-mail.',
+        ].join('\n'),
         html: `
           <!DOCTYPE html>
           <html>
@@ -272,7 +299,7 @@ exports.requestAccess = async (req, res) => {
             </head>
             <body>
               <div class="container">
-                <div class="header"><h1>🔐 Acesso ao Sistema</h1></div>
+                <div class="header"><h1>Seu código de acesso</h1></div>
                 <div class="content">
                   <h2>Olá ${user.name}!</h2>
 
