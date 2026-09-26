@@ -10,6 +10,7 @@ async function materiaForaDaTurma(subjectId, turmaId) {
   return existe ? null : 'A matéria não é desta turma';
 }
 const EventNote = require('../models/eventNote');
+const Material = require('../models/material');
 const { filtroDeTurma, pertenceAoUsuario } = require('../middleware/turma');
 const { camposDoEvento, gerenciaTurma } = require('../services/eventoService');
 
@@ -189,6 +190,8 @@ exports.deleteEvent = async (req, res) => {
     await Event.findByIdAndDelete(req.params.id);
     // Observações sem evento não aparecem em lugar nenhum; não ficam para trás.
     await EventNote.deleteMany({ eventId: event._id });
+    // Material da prova continua sendo da matéria: só perde a ligação com ela.
+    await Material.updateMany({ eventId: event._id }, { $unset: { eventId: 1 } });
 
     res.status(200).json({
       success: true,
