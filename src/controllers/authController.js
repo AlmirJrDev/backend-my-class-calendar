@@ -26,6 +26,11 @@ const createEmailTransporter = () => {
 const emailFrom = () => {
   const name = process.env.FROM_NAME || 'My Class Calendar';
   const address = process.env.FROM_EMAIL || process.env.EMAIL_USER;
+  // Em serviço de envio (Resend, Brevo...) o usuário do SMTP não é um e-mail;
+  // sem FROM_EMAIL o remetente sairia "My Class Calendar <resend>".
+  if (!address || !address.includes('@')) {
+    throw new Error('Defina FROM_EMAIL com um endereço do domínio verificado no serviço de envio');
+  }
   return `${name} <${address}>`;
 };
 
@@ -136,6 +141,7 @@ exports.register = async (req, res) => {
         email: user.email
       });
     } catch (error) {
+      console.error('[email] falha ao enviar verificação:', error.message);
       user.verificationToken = undefined;
       user.verificationTokenExpire = undefined;
       await user.save();
@@ -337,6 +343,7 @@ exports.requestAccess = async (req, res) => {
         email: user.email
       });
     } catch (error) {
+      console.error('[email] falha ao enviar código de acesso:', error.message);
       user.verificationToken = undefined;
       user.verificationOtp = undefined;
       user.verificationTokenExpire = undefined;
