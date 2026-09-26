@@ -42,6 +42,20 @@ const eventSchema = new mongoose.Schema({
     type: String,
     trim: true
   },
+  // A matéria pelo id: o nome em `subject` continua para exibição, mas muda
+  // se a matéria for renomeada, e a ligação com a nota não pode quebrar.
+  subjectId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Subject'
+  },
+  // Item da fórmula de média que esta prova ou entrega representa ("P1",
+  // "AD"). É o que faz o calendário dizer quanto ela vale.
+  gradeKey: {
+    type: String,
+    trim: true,
+    uppercase: true,
+    maxlength: [20, 'Chave da nota muito longa']
+  },
   description: {
     type: String,
     trim: true

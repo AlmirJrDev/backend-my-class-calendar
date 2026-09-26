@@ -31,6 +31,12 @@ describe('camposDoEvento', () => {
   });
 });
 
+describe('camposDoEvento — ligação com a nota', () => {
+  it('aceita a matéria pelo id e o item da fórmula', () => {
+    expect(camposDoEvento({ subjectId: 'abc', gradeKey: 'P1' })).toEqual({ subjectId: 'abc', gradeKey: 'P1' });
+  });
+});
+
 describe('gerenciaTurma', () => {
   it('representante da turma gerencia', () => {
     expect(gerenciaTurma(req({ [TURMA_A]: 'representante' }), TURMA_A)).toBe(true);

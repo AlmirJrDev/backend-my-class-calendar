@@ -12,6 +12,8 @@ const CAMPOS_EDITAVEIS = [
   'endTime',
   'location',
   'subject',
+  'subjectId',
+  'gradeKey',
   'description',
   'recurring',
   'daysOfWeek'

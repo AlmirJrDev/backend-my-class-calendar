@@ -1,4 +1,14 @@
+const mongoose = require('mongoose');
 const Event = require('../models/event');
+const Subject = require('../models/subject');
+
+/** Confere que a matéria é da turma; devolve mensagem de erro ou null. */
+async function materiaForaDaTurma(subjectId, turmaId) {
+  if (!subjectId) return null;
+  if (!mongoose.isValidObjectId(subjectId)) return 'Matéria inválida';
+  const existe = await Subject.exists({ _id: subjectId, turmaId });
+  return existe ? null : 'A matéria não é desta turma';
+}
 const EventNote = require('../models/eventNote');
 const { filtroDeTurma, pertenceAoUsuario } = require('../middleware/turma');
 const { camposDoEvento, gerenciaTurma } = require('../services/eventoService');
@@ -102,6 +112,9 @@ exports.createEvent = async (req, res) => {
       });
     }
 
+    const problema = await materiaForaDaTurma(req.body.subjectId, turmaId);
+    if (problema) return res.status(400).json({ success: false, error: problema });
+
     const event = await Event.create({
       ...camposDoEvento(req.body),
       turmaId,
@@ -136,6 +149,9 @@ exports.updateEvent = async (req, res) => {
         error: 'Evento não encontrado'
       });
     }
+
+    const problema = await materiaForaDaTurma(req.body.subjectId, event.turmaId);
+    if (problema) return res.status(400).json({ success: false, error: problema });
 
     // save() em vez de findByIdAndUpdate: roda também a validação dos dias da
     // semana em evento recorrente.
