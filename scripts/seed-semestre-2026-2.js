@@ -90,18 +90,22 @@ const MATERIAS = [
       { key: 'P2', label: 'Avaliação Teórica 2', weight: 0.3, date: '2026-12-01' },
     ],
   },
-  // Sem plano de ensino recebido: entra com grade e chamada funcionando, mas
-  // sem fórmula de nota. O professor e a fórmula saem pelo editor do admin.
   {
     name: 'Redes de Computadores',
     code: 'G4428.12',
-    teacher: 'A definir',
+    teacher: 'Clevison Lamas Veloso',
     color: '#ec4899',
     schedule: [
       { dayOfWeek: 3, periods: [1, 2] },
       { dayOfWeek: 4, periods: [4, 5] },
     ],
-    gradeFormula: [],
+    gradeFormula: [
+      { key: 'AT1', label: 'Atividade 1', weight: 0.1, date: '2026-09-17' },
+      { key: 'AT2', label: 'Atividade 2', weight: 0.1, date: '2026-10-15' },
+      { key: 'AT3', label: 'Atividade 3', weight: 0.1, date: '2026-11-04' },
+      { key: 'PI', label: 'Prova Interdisciplinar', weight: 0.1, date: '2026-11-18' },
+      { key: 'P1', label: 'Prova 1', weight: 0.6, date: '2026-12-02' },
+    ],
   },
   {
     name: 'Gerenciamento de Banco de Dados',

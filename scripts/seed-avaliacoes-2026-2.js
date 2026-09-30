@@ -59,18 +59,13 @@ const AVALIACOES = [
   { subject: 'Gerenciamento de Banco de Dados', date: '2026-12-17', type: 'exam', title: 'SUB — Substitutiva' },
 
   // --- Redes de Computadores ---
-  // O plano de ensino ainda não saiu; esta data foi anunciada pelo professor
-  // em aula. Fica só como evento no calendário: sem o plano não dá para saber
-  // o peso, e chutar um quebraria a soma 1.0 da fórmula de nota.
-  {
-    subject: 'Redes de Computadores',
-    date: '2026-09-17',
-    type: 'exam',
-    title: 'Prova',
-    description:
-      'Redes de Computadores — data anunciada pelo professor em aula. ' +
-      'O plano de ensino ainda não foi divulgado.',
-  },
+  // O plano saiu depois; estes eventos foram gravados por
+  // scripts/plano-redes-2026-2.js, que também liga cada um à fórmula de nota.
+  { subject: 'Redes de Computadores', date: '2026-09-17', type: 'exam', title: 'AT1 — Atividade 1' },
+  { subject: 'Redes de Computadores', date: '2026-10-15', type: 'exam', title: 'AT2 — Atividade 2' },
+  { subject: 'Redes de Computadores', date: '2026-11-04', type: 'exam', title: 'AT3 — Atividade 3' },
+  { subject: 'Redes de Computadores', date: '2026-12-02', type: 'exam', title: 'P1 — Prova 1' },
+  { subject: 'Redes de Computadores', date: '2026-12-09', type: 'exam', title: 'SUB1 — Prova Substitutiva' },
 ];
 
 // A Prova Interdisciplinar cai em 18/11 em todos os planos: é uma prova só.
@@ -81,8 +76,8 @@ const INTERDISCIPLINAR = {
   title: 'PI — Prova Interdisciplinar',
   description:
     'Prova interdisciplinar comum a Estrutura de Dados II, Probabilidade e ' +
-    'Estatística, Engenharia de Software, Fundamentos do Cristianismo e ' +
-    'Gerenciamento de Banco de Dados.',
+    'Estatística, Engenharia de Software, Fundamentos do Cristianismo, ' +
+    'Gerenciamento de Banco de Dados e Redes de Computadores.',
 };
 
 function paraData(iso) {
