@@ -39,5 +39,21 @@ exports.podeDesfazer = (req, chamada, ehRepresentante) =>
 exports.comoHora = (minutoDoDia) =>
   `${String(Math.floor(minutoDoDia / 60)).padStart(2, '0')}:${String(minutoDoDia % 60).padStart(2, '0')}`;
 
-/** Minuto do dia de uma data, no fuso de quem enviou. */
-exports.minutoDoDia = (data) => data.getHours() * 60 + data.getMinutes();
+/** Brasília está em UTC−3 o ano todo desde que o horário de verão acabou. */
+const FUSO_EM_MINUTOS = -3 * 60;
+
+/**
+ * O dia e o minuto do dia de um instante, no horário de Brasília. Não dá para
+ * usar getHours(): o servidor roda em UTC, e 21:27 aqui viraria 00:27 — e o
+ * aviso das 21h cairia no dia seguinte. O dia sai à meia-noite de Brasília
+ * (03:00 UTC), como as datas dos eventos.
+ */
+exports.momentoEmBrasilia = (instante) => {
+  const local = new Date(instante.getTime() + FUSO_EM_MINUTOS * 60 * 1000);
+  return {
+    dia: new Date(
+      Date.UTC(local.getUTCFullYear(), local.getUTCMonth(), local.getUTCDate()) - FUSO_EM_MINUTOS * 60 * 1000
+    ),
+    minutoDoDia: local.getUTCHours() * 60 + local.getUTCMinutes()
+  };
+};

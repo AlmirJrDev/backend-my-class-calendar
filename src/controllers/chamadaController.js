@@ -2,7 +2,7 @@ const mongoose = require('mongoose');
 const Chamada = require('../models/chamada');
 const Subject = require('../models/subject');
 const { filtroDeTurma } = require('../middleware/turma');
-const { horarioTipico, comoHora, minutoDoDia, podeDesfazer } = require('../services/chamadaService');
+const { horarioTipico, comoHora, momentoEmBrasilia, podeDesfazer } = require('../services/chamadaService');
 const { gerenciaTurma } = require('../services/eventoService');
 
 const erro = (res, status, mensagem, e) =>
@@ -29,8 +29,7 @@ exports.avisarChamada = async (req, res) => {
     const materia = await Subject.findOne({ _id: subjectId, ...filtroDeTurma(req) }).select('turmaId');
     if (!materia) return erro(res, 404, 'Matéria não encontrada');
 
-    const agora = new Date();
-    const dia = new Date(agora.getFullYear(), agora.getMonth(), agora.getDate());
+    const { dia, minutoDoDia } = momentoEmBrasilia(new Date());
 
     // Um aviso por aula: o segundo toque não conta de novo, mas também não é
     // erro — quem avisou depois só confirma o que já está registrado.
@@ -42,7 +41,7 @@ exports.avisarChamada = async (req, res) => {
           subjectId,
           dia,
           period,
-          minutoDoDia: minutoDoDia(agora),
+          minutoDoDia,
           userId: req.user.id
         }
       },
@@ -56,7 +55,7 @@ exports.avisarChamada = async (req, res) => {
         subjectId,
         period,
         horario: comoHora(chamada.minutoDoDia),
-        jaAvisada: chamada.minutoDoDia !== minutoDoDia(agora)
+        jaAvisada: chamada.minutoDoDia !== minutoDoDia
       }
     });
   } catch (e) {
@@ -108,8 +107,7 @@ exports.horariosTipicos = async (req, res) => {
 // @access  Membro da turma
 exports.chamadasDeHoje = async (req, res) => {
   try {
-    const agora = new Date();
-    const dia = new Date(agora.getFullYear(), agora.getMonth(), agora.getDate());
+    const { dia } = momentoEmBrasilia(new Date());
 
     const avisos = await Chamada.find({ ...filtroDeTurma(req), dia })
       .select('subjectId period minutoDoDia turmaId userId')

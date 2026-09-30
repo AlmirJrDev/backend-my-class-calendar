@@ -36,6 +36,29 @@ describe('comoHora', () => {
   });
 });
 
+describe('momentoEmBrasilia', () => {
+  const { momentoEmBrasilia } = require('../chamadaService');
+
+  it('usa a hora de Brasília, não a do servidor em UTC', () => {
+    // 21:27 em Brasília é 00:27 do dia seguinte em UTC.
+    const { minutoDoDia, dia } = momentoEmBrasilia(new Date('2026-09-30T00:27:00Z'));
+    expect(comoHora(minutoDoDia)).toBe('21:27');
+    expect(dia.toISOString()).toBe('2026-09-29T03:00:00.000Z');
+  });
+
+  it('avisos antes e depois das 21h caem no mesmo dia', () => {
+    const antes = momentoEmBrasilia(new Date('2026-09-29T23:50:00Z')); // 20:50
+    const depois = momentoEmBrasilia(new Date('2026-09-30T00:10:00Z')); // 21:10
+    expect(antes.dia.getTime()).toBe(depois.dia.getTime());
+  });
+
+  it('meia-noite de Brasília já é o dia novo', () => {
+    const { minutoDoDia, dia } = momentoEmBrasilia(new Date('2026-09-30T03:00:00Z'));
+    expect(minutoDoDia).toBe(0);
+    expect(dia.toISOString()).toBe('2026-09-30T03:00:00.000Z');
+  });
+});
+
 describe('podeDesfazer', () => {
   const { podeDesfazer } = require('../chamadaService');
   const aviso = { userId: 'quem-avisou' };
