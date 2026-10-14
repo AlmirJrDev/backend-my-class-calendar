@@ -6,6 +6,7 @@ const {
   exportarDados,
   excluirConta,
   turmasQueImpedem,
+  validarNome,
   VERSAO_DOS_TERMOS
 } = require('../services/contaService');
 
@@ -52,6 +53,19 @@ exports.aceitarTermos = async (req, res) => {
     res.status(200).json({ success: true, data: { versao: VERSAO_DOS_TERMOS } });
   } catch (e) {
     erro(res, 500, 'Erro ao registrar o aceite', e);
+  }
+};
+
+// @desc    Muda o nome que aparece para a turma
+// @route   PATCH /api/conta
+exports.mudarNome = async (req, res) => {
+  try {
+    const { nome, erro: invalido } = validarNome(req.body?.name);
+    if (invalido) return erro(res, 400, invalido);
+    await User.updateOne({ _id: req.user.id }, { $set: { name: nome } });
+    res.status(200).json({ success: true, data: { name: nome } });
+  } catch (e) {
+    erro(res, 500, 'Erro ao mudar o nome', e);
   }
 };
 

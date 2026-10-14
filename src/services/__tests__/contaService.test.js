@@ -10,6 +10,7 @@ const {
   exportarDados,
   excluirConta,
   turmasQueImpedem,
+  validarNome,
   DA_PESSOA
 } = require('../contaService');
 
@@ -60,6 +61,30 @@ describe('termos', () => {
   it('o registro guarda a versão e o momento', () => {
     const agora = new Date('2026-10-14T20:00:00Z');
     expect(registroDeAceite(agora)).toEqual({ versao: VERSAO_DOS_TERMOS, em: agora });
+  });
+});
+
+describe('validarNome', () => {
+  it('limpa espaços a mais', () => {
+    expect(validarNome('  Almir   Junior ')).toEqual({ nome: 'Almir Junior' });
+  });
+
+  it('recusa curto, vazio, longo ou que não é texto', () => {
+    expect(validarNome('A').erro).toMatch(/pelo menos 2/);
+    expect(validarNome('   ').erro).toMatch(/pelo menos 2/);
+    expect(validarNome(undefined).erro).toMatch(/pelo menos 2/);
+    expect(validarNome({ $set: 'x' }).erro).toMatch(/pelo menos 2/);
+    expect(validarNome('a'.repeat(61)).erro).toMatch(/até 60/);
+  });
+
+  it('não mexe nas letras: só espaços são limpos', () => {
+    // Uma regex /s+/ (sem a barra) trocava toda letra "s" por espaço.
+    expect(validarNome('Souza Silva').nome).toBe('Souza Silva');
+  });
+
+  it('aceita acento e nome de 60 caracteres', () => {
+    expect(validarNome('João Antônio').nome).toBe('João Antônio');
+    expect(validarNome('a'.repeat(60)).nome).toHaveLength(60);
   });
 });
 

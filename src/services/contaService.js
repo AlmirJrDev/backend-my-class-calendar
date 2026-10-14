@@ -18,6 +18,18 @@ exports.termosPendentes = (usuario) => usuario?.termosAceitos?.versao !== export
 
 exports.registroDeAceite = (agora = new Date()) => ({ versao: exports.VERSAO_DOS_TERMOS, em: agora });
 
+/**
+ * Nome que a turma vê. O Google entrega o nome completo da conta, que nem
+ * sempre é como a pessoa é conhecida; por isso ela pode trocar.
+ * Devolve { nome } ou { erro }.
+ */
+exports.validarNome = (valor) => {
+  const nome = typeof valor === 'string' ? valor.replace(/\s+/g, ' ').trim() : '';
+  if (nome.length < 2) return { erro: 'O nome precisa ter pelo menos 2 letras' };
+  if (nome.length > 60) return { erro: 'O nome pode ter até 60 caracteres' };
+  return { nome };
+};
+
 /** Confirmação da exclusão: o e-mail da própria conta, sem diferença de caixa ou espaço. */
 exports.confereEmail = (digitado, email) =>
   Boolean(email) && String(digitado ?? '').trim().toLowerCase() === String(email).trim().toLowerCase();
