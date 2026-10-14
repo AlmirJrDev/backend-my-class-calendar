@@ -3,7 +3,6 @@ const {
   termosPendentes,
   registroDeAceite,
   confereEmail,
-  exportarDados,
   excluirConta,
   turmasQueImpedem,
   validarNome,
@@ -66,17 +65,6 @@ exports.mudarNome = async (req, res) => {
     res.status(200).json({ success: true, data: { name: nome } });
   } catch (e) {
     erro(res, 500, 'Erro ao mudar o nome', e);
-  }
-};
-
-// @desc    Os dados da pessoa, para baixar (LGPD: acesso e portabilidade)
-// @route   GET /api/conta/meus-dados
-exports.meusDados = async (req, res) => {
-  try {
-    const dados = await exportarDados(req.user.id, models());
-    res.status(200).json({ success: true, data: dados });
-  } catch (e) {
-    erro(res, 500, 'Erro ao reunir os seus dados', e);
   }
 };
 
