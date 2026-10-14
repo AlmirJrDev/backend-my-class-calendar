@@ -1,5 +1,7 @@
+const mongoose = require('mongoose');
 const Turma = require('../models/turma');
 const TurmaMember = require('../models/turmaMember');
+const { podeExcluir, confereNome, contarDaTurma, excluirTurma } = require('../services/exclusaoDeTurmaService');
 
 const erro = (res, status, mensagem, e) =>
   res.status(status).json({
@@ -19,7 +21,7 @@ async function papelEm(turmaId, userId) {
 exports.minhasTurmas = async (req, res) => {
   try {
     const vinculos = await TurmaMember.find({ userId: req.user.id })
-      .populate('turmaId', 'name semester active')
+      .populate('turmaId', 'name semester active ownerId')
       .lean();
 
     const turmas = vinculos
@@ -29,7 +31,9 @@ exports.minhasTurmas = async (req, res) => {
         name: v.turmaId.name,
         semester: v.turmaId.semester,
         active: v.turmaId.active,
-        role: v.role
+        role: v.role,
+        // Só quem criou a turma pode excluí-la; o front usa para mostrar a opção.
+        ehDono: String(v.turmaId.ownerId) === req.user.id
       }));
 
     res.status(200).json({ success: true, count: turmas.length, data: turmas });
@@ -273,5 +277,71 @@ exports.desligarCompartilhamento = async (req, res) => {
     });
   } catch (e) {
     erro(res, 500, 'Erro ao desligar o link', e);
+  }
+};
+
+/** Tudo o que a exclusão apaga, carregado só quando alguém exclui. */
+const modelsDaTurma = () => ({
+  Turma,
+  TurmaMember,
+  Subject: require('../models/subject'),
+  Event: require('../models/event'),
+  Attendance: require('../models/attendance'),
+  GradeEntry: require('../models/gradeEntry'),
+  EventNote: require('../models/eventNote'),
+  Material: require('../models/material'),
+  Chamada: require('../models/chamada'),
+  EventSuggestion: require('../models/eventSuggestion')
+});
+
+/** A turma, se existir e se a pessoa puder excluí-la; senão a resposta de erro já enviada. */
+async function turmaParaExcluir(req, res) {
+  if (!mongoose.isValidObjectId(req.params.id)) {
+    erro(res, 404, 'Turma não encontrada');
+    return null;
+  }
+  const turma = await Turma.findById(req.params.id).select('name ownerId').lean();
+  // Quem não participa não descobre se a turma existe.
+  if (!turma || !(await papelEm(turma._id, req.user.id))) {
+    erro(res, 404, 'Turma não encontrada');
+    return null;
+  }
+  if (!podeExcluir(turma, req.user.id)) {
+    erro(res, 403, 'Só quem criou a turma pode excluí-la');
+    return null;
+  }
+  return turma;
+}
+
+// @desc    O que sai junto se a turma for excluída
+// @route   GET /api/turmas/:id/exclusao
+exports.previaDaExclusao = async (req, res) => {
+  try {
+    const turma = await turmaParaExcluir(req, res);
+    if (!turma) return;
+    const contagem = await contarDaTurma(turma._id, modelsDaTurma());
+    res.status(200).json({ success: true, data: { nome: turma.name, contagem } });
+  } catch (e) {
+    erro(res, 500, 'Erro ao conferir a turma', e);
+  }
+};
+
+// @desc    Exclui a turma e tudo o que é dela, para sempre
+// @route   DELETE /api/turmas/:id
+exports.excluirTurma = async (req, res) => {
+  try {
+    const turma = await turmaParaExcluir(req, res);
+    if (!turma) return;
+
+    // A confirmação vem da API também, não só da tela: uma chamada perdida ou
+    // um clique errado não pode apagar a turma de todo mundo.
+    if (!confereNome(req.body?.confirmacao, turma.name)) {
+      return erro(res, 400, 'Digite o nome da turma para confirmar a exclusão');
+    }
+
+    const apagados = await excluirTurma(turma._id, modelsDaTurma());
+    res.status(200).json({ success: true, message: 'Turma excluída', data: { apagados } });
+  } catch (e) {
+    erro(res, 500, 'Erro ao excluir a turma', e);
   }
 };

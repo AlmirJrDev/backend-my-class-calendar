@@ -11,7 +11,9 @@ const {
   removerMembro,
   verCompartilhamento,
   ligarCompartilhamento,
-  desligarCompartilhamento
+  desligarCompartilhamento,
+  previaDaExclusao,
+  excluirTurma
 } = require('../controllers/turmaController');
 const { protect } = require('../middleware/auth');
 const { entrarNaTurmaLimiter } = require('../middleware/rateLimit');
@@ -32,6 +34,9 @@ router.post('/:id/convite/rotacionar', rotacionarConvite);
 router.get('/:id/compartilhamento', verCompartilhamento);
 router.post('/:id/compartilhamento', ligarCompartilhamento);
 router.delete('/:id/compartilhamento', desligarCompartilhamento);
+
+router.get('/:id/exclusao', previaDaExclusao);
+router.delete('/:id', excluirTurma);
 
 router.get('/:id/membros', listarMembros);
 router.delete('/:id/membros/:userId', removerMembro);
