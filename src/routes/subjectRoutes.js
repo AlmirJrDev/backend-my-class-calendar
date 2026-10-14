@@ -11,6 +11,7 @@ const {
   getSubjectsByDay
 } = require('../controllers/subjectController');
 
+const { previaDoPlano, importarPlano } = require('../controllers/planoController');
 const { protect } = require('../middleware/auth');
 const { escopoDeTurma, exigeRepresentante } = require('../middleware/turma');
 
@@ -24,6 +25,8 @@ router.get('/:id', protect, escopoDeTurma, getSubject);
 router.post('/', protect, escopoDeTurma, exigeRepresentante, createSubject);
 router.put('/:id', protect, escopoDeTurma, exigeRepresentante, updateSubject);
 router.delete('/:id', protect, escopoDeTurma, exigeRepresentante, deleteSubject);
+router.post('/:id/plano/previa', protect, escopoDeTurma, exigeRepresentante, previaDoPlano);
+router.post('/:id/plano', protect, escopoDeTurma, exigeRepresentante, importarPlano);
 router.patch('/:id/toggle-active', protect, escopoDeTurma, exigeRepresentante, toggleActive);
 
 module.exports = router;
