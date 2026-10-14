@@ -10,7 +10,8 @@ const {
   podeModerar,
   podeVer,
   turmaDaNovaSugestao,
-  camposDoEventoDaSugestao
+  camposDoEventoDaSugestao,
+  filtroDasMinhas
 } = require('../services/sugestaoService');
 
 // Sugestão de outra turma responde 404, igual a uma que não existe: um 403
@@ -114,7 +115,7 @@ exports.getMySuggestions = async (req, res) => {
   try {
     const { status, type } = req.query;
 
-    const filter = { userId: req.user.id };
+    const filter = filtroDasMinhas(req);
     if (status) filter.status = status;
     if (type) filter.type = type;
 

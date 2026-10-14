@@ -7,7 +7,8 @@ const {
   podeModerar,
   podeVer,
   turmaDaNovaSugestao,
-  camposDoEventoDaSugestao
+  camposDoEventoDaSugestao,
+  filtroDasMinhas
 } = require('../sugestaoService');
 
 const TURMA_A = 'aaaaaaaaaaaaaaaaaaaaaaaa';
@@ -99,6 +100,17 @@ describe('turmaDaNovaSugestao', () => {
   it('representante de outra turma, aluno nesta, pode sugerir nesta', () => {
     const r = req({ [TURMA_A]: 'aluno', [TURMA_B]: 'representante' }, { escopo: [TURMA_A] });
     expect(turmaDaNovaSugestao(r)).toEqual({ turmaId: TURMA_A });
+  });
+});
+
+describe('filtroDasMinhas', () => {
+  it('só as sugestões da pessoa na turma aberta', () => {
+    const r = req({ [TURMA_A]: 'aluno', [TURMA_B]: 'aluno' }, { escopo: [TURMA_B], id: 'eu' });
+    expect(filtroDasMinhas(r)).toEqual({ userId: 'eu', turmaId: { $in: [TURMA_B] } });
+  });
+
+  it('sem turma no escopo não lista nada', () => {
+    expect(filtroDasMinhas(req({}, { escopo: [] })).turmaId).toEqual({ $in: [] });
   });
 });
 

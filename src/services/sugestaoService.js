@@ -77,4 +77,13 @@ exports.camposDoEventoDaSugestao = (dados = {}) => {
   return campos;
 };
 
+/**
+ * "Minhas sugestões" da turma aberta. Sem o filtro de turma, quem participa de
+ * mais de uma via as sugestões de todas misturadas, qualquer que fosse a ativa.
+ */
+exports.filtroDasMinhas = (req) => ({
+  userId: req.user.id,
+  turmaId: { $in: req.turmaIds || [] }
+});
+
 exports.TIPO_DO_EVENTO = TIPO_DO_EVENTO;
