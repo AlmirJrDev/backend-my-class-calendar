@@ -12,7 +12,7 @@ async function materiaForaDaTurma(subjectId, turmaId) {
 const EventNote = require('../models/eventNote');
 const Material = require('../models/material');
 const { filtroDeTurma, pertenceAoUsuario } = require('../middleware/turma');
-const { camposDoEvento, gerenciaTurma } = require('../services/eventoService');
+const { camposDoEvento, gerenciaTurma, marcasDeData } = require('../services/eventoService');
 
 // @desc    Obter todos os eventos (público para visualização)
 // @route   GET /api/events
@@ -156,7 +156,7 @@ exports.updateEvent = async (req, res) => {
 
     // save() em vez de findByIdAndUpdate: roda também a validação dos dias da
     // semana em evento recorrente.
-    event.set(camposDoEvento(req.body));
+    event.set({ ...camposDoEvento(req.body), ...marcasDeData(event, req.body) });
     await event.save();
 
     res.status(200).json({

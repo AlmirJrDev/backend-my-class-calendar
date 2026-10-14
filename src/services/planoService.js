@@ -164,7 +164,10 @@ function planejarEventos(plano, materia, existentes = [], compartilhados = []) {
       return { acao: 'criar', evento: { ...previsto, time } };
     }
 
-    const novo = { ...previsto, time: achado.time || time };
+    // Data mudada na turma (aviso do professor, adiamento) vale mais que a do
+    // plano: reimportar não pode desfazer o que a turma combinou.
+    const dataDaTurma = Boolean(achado.dataAlteradaNaTurma || achado.adiado);
+    const novo = { ...previsto, date: dataDaTurma ? isoDe(achado.date) : previsto.date, time: achado.time || time };
     const igual =
       achado.title === novo.title &&
       achado.type === novo.type &&
@@ -177,6 +180,7 @@ function planejarEventos(plano, materia, existentes = [], compartilhados = []) {
       evento: novo,
       existenteId: String(achado._id),
       tituloAntes: achado.title !== novo.title ? achado.title : undefined,
+      motivo: dataDaTurma ? (achado.adiado ? 'adiada na turma; mantida' : 'data mudada na turma; mantida') : undefined,
     };
   });
 }

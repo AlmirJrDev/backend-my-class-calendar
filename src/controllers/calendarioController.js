@@ -75,7 +75,7 @@ exports.feed = async (req, res) => {
     desde.setDate(desde.getDate() - DIAS_PASSADOS);
 
     const eventos = await Event.find({ turmaId: { $in: turmas.map((t) => t._id) }, date: { $gte: desde } })
-      .select('title type date time endTime location subject description recurring daysOfWeek turmaId createdAt updatedAt')
+      .select('title type date time endTime location subject description recurring daysOfWeek adiado turmaId createdAt updatedAt')
       .sort({ date: 1 })
       .lean();
 

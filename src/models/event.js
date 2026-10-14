@@ -60,6 +60,18 @@ const eventSchema = new mongoose.Schema({
     type: String,
     trim: true
   },
+  // O professor desmarcou e ainda não deu a nova data. O evento fica no dia
+  // original, marcado como adiado, até alguém editar a data.
+  adiado: {
+    type: Boolean,
+    default: false
+  },
+  // A data foi mudada na turma (aviso do professor, adiamento). Importar o
+  // plano de ensino de novo não volta a data do plano por cima disto.
+  dataAlteradaNaTurma: {
+    type: Boolean,
+    default: false
+  },
   recurring: {
     type: Boolean,
     default: false

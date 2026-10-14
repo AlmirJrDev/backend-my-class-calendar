@@ -96,7 +96,9 @@ function linhasDoEvento(evento, { prefixo, linkDoApp }) {
 
   // A turma vai no fim: o calendário corta o título no fim, e o que importa
   // de relance é o tipo e o nome da prova.
-  const titulo = [`${tipo}: ${evento.title}`, prefixo].filter(Boolean).join(' · ');
+  // Adiada: continua no dia original, para quem assinou ver que mudou.
+  const nome = evento.adiado ? `ADIADA — ${evento.title} (nova data a definir)` : evento.title;
+  const titulo = [`${tipo}: ${nome}`, prefixo].filter(Boolean).join(' · ');
   const descricao = [
     evento.subject && `Matéria: ${evento.subject}`,
     evento.description,
