@@ -1,15 +1,28 @@
+const mongoose = require('mongoose');
 const EventSuggestion = require('../models/eventSuggestion');
 const Event = require('../models/event');
-const User = require('../models/user');
+const EventNote = require('../models/eventNote');
+const Material = require('../models/material');
+// Sem uso direto: carregar o model o registra, e o populate('userId') precisa dele.
+require('../models/user');
+const {
+  turmasQueModera,
+  podeModerar,
+  podeVer,
+  turmaDaNovaSugestao,
+  camposDoEventoDaSugestao
+} = require('../services/sugestaoService');
 
-const ehModerador = (req) =>
-  req.user.role === 'superadmin' ||
-  (req.turmaIds || []).some((id) => req.papelNaTurma.get(id.toString()) === 'representante');
+// Sugestão de outra turma responde 404, igual a uma que não existe: um 403
+// confirmaria que o id é de verdade.
+const naoEncontrada = (res) =>
+  res.status(404).json({ success: false, error: 'Sugestão não encontrada' });
 
+const idInvalido = (id) => !mongoose.isValidObjectId(id);
 
 // @desc    Criar sugestão de evento (aluno)
 // @route   POST /api/suggestions
-// @access  Private (Student)
+// @access  Private (aluno da turma)
 exports.createSuggestion = async (req, res) => {
   try {
     const { type, eventId, suggestionData, reason } = req.body;
@@ -30,10 +43,24 @@ exports.createSuggestion = async (req, res) => {
       });
     }
 
-    // Se for update ou delete, verificar se evento existe
+    // A sugestão nasce numa turma só: é nela que o representante vai aprovar.
+    const { turmaId, erro } = turmaDaNovaSugestao(req);
+    if (erro) {
+      return res.status(400).json({ success: false, error: erro });
+    }
+
+    // Se for update ou delete, o evento precisa ser desta turma. Sem essa
+    // conferência dava para apontar o evento de outra turma e ainda receber os
+    // dados dele de volta em originalData.
     let originalData = null;
-    if ((type === 'update' || type === 'delete') && eventId) {
-      const event = await Event.findById(eventId);
+    if (type === 'update' || type === 'delete') {
+      if (!eventId) {
+        return res.status(400).json({
+          success: false,
+          error: 'ID do evento é obrigatório para alterações ou exclusões'
+        });
+      }
+      const event = idInvalido(eventId) ? null : await Event.findOne({ _id: eventId, turmaId });
       if (!event) {
         return res.status(404).json({
           success: false,
@@ -41,11 +68,6 @@ exports.createSuggestion = async (req, res) => {
         });
       }
       originalData = event.toObject();
-    } else if ((type === 'update' || type === 'delete') && !eventId) {
-      return res.status(400).json({
-        success: false,
-        error: 'ID do evento é obrigatório para alterações ou exclusões'
-      });
     }
 
     // Se for novo evento, validar dados
@@ -58,6 +80,7 @@ exports.createSuggestion = async (req, res) => {
 
     // Criar sugestão
     const suggestion = await EventSuggestion.create({
+      turmaId,
       userId: req.user.id,
       eventId: eventId || null,
       type,
@@ -72,7 +95,7 @@ exports.createSuggestion = async (req, res) => {
 
     res.status(201).json({
       success: true,
-      message: 'Sugestão enviada com sucesso! O administrador será notificado.',
+      message: 'Sugestão enviada com sucesso! O representante da turma será notificado.',
       data: suggestion
     });
   } catch (error) {
@@ -86,7 +109,7 @@ exports.createSuggestion = async (req, res) => {
 
 // @desc    Listar minhas sugestões (aluno)
 // @route   GET /api/suggestions/my-suggestions
-// @access  Private (Student)
+// @access  Private (aluno)
 exports.getMySuggestions = async (req, res) => {
   try {
     const { status, type } = req.query;
@@ -114,12 +137,15 @@ exports.getMySuggestions = async (req, res) => {
   }
 };
 
-// @desc    Listar todas as sugestões pendentes (admin)
+// @desc    Listar as sugestões pendentes das turmas que a pessoa modera
 // @route   GET /api/suggestions/pending
-// @access  Private (Admin)
+// @access  Private (representante)
 exports.getPendingSuggestions = async (req, res) => {
   try {
-    const suggestions = await EventSuggestion.find({ status: 'pending' })
+    const suggestions = await EventSuggestion.find({
+      status: 'pending',
+      turmaId: { $in: turmasQueModera(req) }
+    })
       .populate('userId', 'name email')
       .populate('eventId')
       .sort({ createdAt: 1 }); // Mais antigas primeiro
@@ -138,14 +164,14 @@ exports.getPendingSuggestions = async (req, res) => {
   }
 };
 
-// @desc    Listar todas as sugestões com filtros (admin)
+// @desc    Listar as sugestões das turmas que a pessoa modera, com filtros
 // @route   GET /api/suggestions/all
-// @access  Private (Admin)
+// @access  Private (representante)
 exports.getAllSuggestions = async (req, res) => {
   try {
     const { status, type, userId } = req.query;
 
-    const filter = {};
+    const filter = { turmaId: { $in: turmasQueModera(req) } };
     if (status) filter.status = status;
     if (type) filter.type = type;
     if (userId) filter.userId = userId;
@@ -179,21 +205,20 @@ exports.getAllSuggestions = async (req, res) => {
   }
 };
 
-// @desc    Aprovar sugestão (admin)
+// @desc    Aprovar sugestão (representante da turma)
 // @route   POST /api/suggestions/:id/approve
-// @access  Private (Admin)
+// @access  Private (representante)
 exports.approveSuggestion = async (req, res) => {
   try {
     const { message } = req.body;
 
+    if (idInvalido(req.params.id)) return naoEncontrada(res);
+
     const suggestion = await EventSuggestion.findById(req.params.id)
       .populate('userId', 'name email');
 
-    if (!suggestion) {
-      return res.status(404).json({
-        success: false,
-        error: 'Sugestão não encontrada'
-      });
+    if (!suggestion || !podeModerar(req, suggestion)) {
+      return naoEncontrada(res);
     }
 
     if (suggestion.status !== 'pending') {
@@ -203,45 +228,51 @@ exports.approveSuggestion = async (req, res) => {
       });
     }
 
+    const { turmaId } = suggestion;
     let event = null;
 
     // Executar ação baseada no tipo
     try {
       switch (suggestion.type) {
         case 'new':
-          // Criar novo evento
+          // O evento nasce na turma da sugestão. Sem turmaId ele ficava
+          // invisível: toda leitura de evento filtra por turma.
           event = await Event.create({
-            ...suggestion.suggestionData,
-            userId: req.user.id // Evento pertence ao admin
+            ...camposDoEventoDaSugestao(suggestion.suggestionData),
+            turmaId,
+            userId: req.user.id // Evento pertence a quem aprovou
           });
           break;
 
-        case 'update':
-          // Atualizar evento existente
+        case 'update': {
+          // Só mexe em evento da mesma turma da sugestão.
           if (!suggestion.eventId) {
             throw new Error('ID do evento não encontrado');
           }
-          event = await Event.findByIdAndUpdate(
-            suggestion.eventId,
-            suggestion.suggestionData,
-            { new: true, runValidators: true }
-          );
+          event = await Event.findOne({ _id: suggestion.eventId, turmaId });
           if (!event) {
             throw new Error('Evento não encontrado para atualização');
           }
+          // save() em vez de findByIdAndUpdate: roda também as validações do model.
+          event.set(camposDoEventoDaSugestao(suggestion.suggestionData));
+          await event.save();
           break;
+        }
 
-        case 'delete':
-          // Deletar evento
+        case 'delete': {
           if (!suggestion.eventId) {
             throw new Error('ID do evento não encontrado');
           }
-          const deletedEvent = await Event.findByIdAndDelete(suggestion.eventId);
+          const deletedEvent = await Event.findOneAndDelete({ _id: suggestion.eventId, turmaId });
           if (!deletedEvent) {
             throw new Error('Evento não encontrado para exclusão');
           }
+          // Mesma limpeza da exclusão direta de evento.
+          await EventNote.deleteMany({ eventId: deletedEvent._id });
+          await Material.updateMany({ eventId: deletedEvent._id }, { $unset: { eventId: 1 } });
           event = { deleted: true, ...deletedEvent.toObject() };
           break;
+        }
       }
 
       // Atualizar status da sugestão
@@ -277,9 +308,9 @@ exports.approveSuggestion = async (req, res) => {
   }
 };
 
-// @desc    Rejeitar sugestão (admin)
+// @desc    Rejeitar sugestão (representante da turma)
 // @route   POST /api/suggestions/:id/reject
-// @access  Private (Admin)
+// @access  Private (representante)
 exports.rejectSuggestion = async (req, res) => {
   try {
     const { message } = req.body;
@@ -291,14 +322,13 @@ exports.rejectSuggestion = async (req, res) => {
       });
     }
 
+    if (idInvalido(req.params.id)) return naoEncontrada(res);
+
     const suggestion = await EventSuggestion.findById(req.params.id)
       .populate('userId', 'name email');
 
-    if (!suggestion) {
-      return res.status(404).json({
-        success: false,
-        error: 'Sugestão não encontrada'
-      });
+    if (!suggestion || !podeModerar(req, suggestion)) {
+      return naoEncontrada(res);
     }
 
     if (suggestion.status !== 'pending') {
@@ -332,27 +362,18 @@ exports.rejectSuggestion = async (req, res) => {
 
 // @desc    Obter detalhes de uma sugestão
 // @route   GET /api/suggestions/:id
-// @access  Private
+// @access  Private (autor ou representante da turma)
 exports.getSuggestion = async (req, res) => {
   try {
+    if (idInvalido(req.params.id)) return naoEncontrada(res);
+
     const suggestion = await EventSuggestion.findById(req.params.id)
       .populate('userId', 'name email')
       .populate('eventId')
       .populate('adminResponse.respondedBy', 'name email');
 
-    if (!suggestion) {
-      return res.status(404).json({
-        success: false,
-        error: 'Sugestão não encontrada'
-      });
-    }
-
-    // Aluno só pode ver suas próprias sugestões
-    if (!ehModerador(req) && suggestion.userId._id.toString() !== req.user.id) {
-      return res.status(403).json({
-        success: false,
-        error: 'Acesso negado'
-      });
+    if (!suggestion || !podeVer(req, suggestion)) {
+      return naoEncontrada(res);
     }
 
     res.status(200).json({
@@ -368,26 +389,17 @@ exports.getSuggestion = async (req, res) => {
   }
 };
 
-// @desc    Deletar sugestão (apenas próprio aluno ou admin)
+// @desc    Deletar sugestão (o próprio autor ou o representante da turma)
 // @route   DELETE /api/suggestions/:id
 // @access  Private
 exports.deleteSuggestion = async (req, res) => {
   try {
+    if (idInvalido(req.params.id)) return naoEncontrada(res);
+
     const suggestion = await EventSuggestion.findById(req.params.id);
 
-    if (!suggestion) {
-      return res.status(404).json({
-        success: false,
-        error: 'Sugestão não encontrada'
-      });
-    }
-
-    // Verificar permissão
-    if (!ehModerador(req) && suggestion.userId.toString() !== req.user.id) {
-      return res.status(403).json({
-        success: false,
-        error: 'Acesso negado'
-      });
+    if (!suggestion || !podeVer(req, suggestion)) {
+      return naoEncontrada(res);
     }
 
     // Só pode deletar se ainda estiver pendente
