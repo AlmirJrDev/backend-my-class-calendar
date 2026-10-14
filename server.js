@@ -5,6 +5,7 @@ const helmet = require('helmet');
 const morgan = require('morgan');
 const connectDB = require('./src/config/database');
 const { apiLimiter } = require('./src/middleware/rateLimit');
+const { verificarOrigem } = require('./src/config/cors');
 
 // Carregar variáveis de ambiente
 dotenv.config();
@@ -24,23 +25,10 @@ app.use(helmet({ contentSecurityPolicy: false }));
 app.use(express.json({ limit: '100kb' }));
 app.use(express.urlencoded({ extended: true, limit: '100kb' }));
 
-// CORS restrito às origens conhecidas do front.
-const allowedOrigins = [
-  process.env.FRONTEND_URL,
-  'http://localhost:8080',
-  'http://localhost:5173',
-  'http://localhost:4173' // vite preview
-].filter(Boolean);
-
+// CORS restrito às origens conhecidas do front (veja src/config/cors.js).
 app.use(
   cors({
-    origin(origin, callback) {
-      // Sem Origin = chamada server-to-server (curl, health check), liberada.
-      // Origem desconhecida: responde sem o cabeçalho e deixa o navegador
-      // barrar. Lançar erro aqui cairia no handler global, devolvendo 500 e
-      // gravando um stack trace a cada requisição bloqueada.
-      callback(null, !origin || allowedOrigins.includes(origin));
-    },
+    origin: verificarOrigem(),
     credentials: true
   })
 );
