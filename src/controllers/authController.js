@@ -2,7 +2,8 @@ const User = require('../models/user');
 const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
 const nodemailer = require('nodemailer');
-const { registroDeAceite } = require('../services/contaService');
+const { registroDeAceite, termosPendentes } = require('../services/contaService');
+const { verificarCredencial, dadosDoGoogle } = require('../services/googleService');
 const {
   evaluateOtpAttempt,
   generateOtp,
@@ -522,6 +523,68 @@ exports.getMe = async (req, res) => {
     res.status(500).json({
       success: false,
       error: 'Erro ao buscar usuário',
+      ...(process.env.NODE_ENV === 'development' && { message: error.message })
+    });
+  }
+};
+// @desc    Entrar com Google (cria a conta no primeiro acesso)
+// @route   POST /api/auth/google
+// @access  Public
+exports.googleLogin = async (req, res) => {
+  try {
+    const { credential, aceitouTermos } = req.body || {};
+    if (!credential || typeof credential !== 'string') {
+      return res.status(400).json({ success: false, error: 'Login com Google sem credencial' });
+    }
+
+    let payload;
+    try {
+      payload = await verificarCredencial(credential);
+    } catch {
+      return res.status(401).json({
+        success: false,
+        error: 'Não foi possível confirmar o login com o Google. Tente de novo.'
+      });
+    }
+
+    const { email, name, erro } = dadosDoGoogle(payload);
+    if (erro) return res.status(401).json({ success: false, error: erro });
+
+    // A mesma pessoa, pelo mesmo e-mail, entra na mesma conta, venha pelo
+    // código ou pelo Google.
+    let user = await User.findOne({ email });
+    if (!user) {
+      // Quem cria a conta pelo Google na aba "Cadastrar" já marcou o aceite;
+      // quem cria pela aba "Fazer login" é chamado a aceitar logo ao entrar.
+      user = await User.create({
+        email,
+        name,
+        isVerified: true,
+        ...(aceitouTermos === true && { termosAceitos: registroDeAceite() })
+      });
+    } else {
+      // O Google confirmou o e-mail: vale como a confirmação do cadastro.
+      user.isVerified = true;
+      if (aceitouTermos === true && termosPendentes(user)) user.termosAceitos = registroDeAceite();
+      await user.save();
+    }
+
+    const jwtToken = jwt.sign(
+      { id: user._id, email: user.email, role: user.role },
+      process.env.JWT_SECRET,
+      { expiresIn: '30d' }
+    );
+
+    res.status(200).json({
+      success: true,
+      message: 'Login realizado com sucesso!',
+      token: jwtToken,
+      user: { id: user._id, email: user.email, name: user.name, role: user.role }
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: 'Erro ao entrar com o Google',
       ...(process.env.NODE_ENV === 'development' && { message: error.message })
     });
   }

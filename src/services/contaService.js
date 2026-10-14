@@ -10,7 +10,8 @@
  * Versão vigente dos Termos de Uso e da Política de Privacidade. Mudou o texto
  * de forma relevante? Troque a data: todo mundo é chamado a aceitar de novo.
  */
-exports.VERSAO_DOS_TERMOS = '2026-10-14';
+// .2: entrou o login com Google (novo fornecedor e novos dados recebidos).
+exports.VERSAO_DOS_TERMOS = '2026-10-14.2';
 
 /** A pessoa precisa aceitar a versão atual? */
 exports.termosPendentes = (usuario) => usuario?.termosAceitos?.versao !== exports.VERSAO_DOS_TERMOS;

@@ -6,7 +6,8 @@ const {
   requestAccess,
   magicLogin,
   getMe,
-  verifyOtp
+  verifyOtp,
+  googleLogin
 } = require('../controllers/authController');
 const { protect } = require('../middleware/auth');
 const {
@@ -20,6 +21,7 @@ router.get('/verify-email/:token', verifyEmail);
 router.post('/request-access', requestAccessLimiter, requestAccess);
 router.get('/magic-login/:token', verifyOtpLimiter, magicLogin);
 router.post('/verify-otp', verifyOtpLimiter, verifyOtp);
+router.post('/google', verifyOtpLimiter, googleLogin);
 
 // Rotas privadas
 router.get('/me', protect, getMe);
