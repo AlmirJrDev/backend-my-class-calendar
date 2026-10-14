@@ -42,6 +42,12 @@ const userSchema = new mongoose.Schema({
     type: String,
     select: false
   },
+  // Versão dos Termos de Uso e da Política de Privacidade aceita, e quando.
+  // Mudou a versão vigente, a pessoa é chamada a aceitar de novo.
+  termosAceitos: {
+    versao: String,
+    em: Date
+  },
   createdAt: {
     type: Date,
     default: Date.now

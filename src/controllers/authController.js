@@ -2,6 +2,7 @@ const User = require('../models/user');
 const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
 const nodemailer = require('nodemailer');
+const { registroDeAceite } = require('../services/contaService');
 const {
   evaluateOtpAttempt,
   generateOtp,
@@ -52,6 +53,15 @@ exports.register = async (req, res) => {
       });
     }
 
+    // LGPD: a conta só nasce com o aceite dos termos e da política, que
+    // incluem a idade mínima. Fica registrado qual versão e quando.
+    if (req.body.aceitouTermos !== true) {
+      return res.status(400).json({
+        success: false,
+        error: 'Para criar a conta, aceite os Termos de Uso e a Política de Privacidade'
+      });
+    }
+
     let user = await User.findOne({ email: email.toLowerCase() });
 
     if (user) {
@@ -67,9 +77,12 @@ exports.register = async (req, res) => {
       // fazia todo cadastro novo falhar com erro 500.
       user = await User.create({
         email: email.toLowerCase(),
-        name
+        name,
+        termosAceitos: registroDeAceite()
       });
     }
+    // Cadastro refeito antes de confirmar o e-mail: vale o aceite de agora.
+    user.termosAceitos = registroDeAceite();
 
     const verificationToken = crypto.randomBytes(32).toString('hex');
     user.verificationToken = crypto

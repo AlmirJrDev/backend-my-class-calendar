@@ -52,6 +52,7 @@ app.use('/api/attendance', require('./src/routes/attendanceRoutes'));
 app.use('/api/chamadas', require('./src/routes/chamadaRoutes'));
 app.use('/api/calendario', require('./src/routes/calendarioRoutes'));
 app.use('/api/materiais', require('./src/routes/materialRoutes'));
+app.use('/api/conta', require('./src/routes/contaRoutes'));
 
 // Rota de teste
 app.get('/', (req, res) => {

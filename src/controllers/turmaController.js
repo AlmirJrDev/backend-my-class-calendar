@@ -162,9 +162,13 @@ exports.entrarComConvite = async (req, res) => {
 // @route   GET /api/turmas/:id/membros
 exports.listarMembros = async (req, res) => {
   try {
-    if (!(await papelEm(req.params.id, req.user.id))) {
+    const papel = await papelEm(req.params.id, req.user.id);
+    if (!papel) {
       return erro(res, 403, 'Você não participa desta turma');
     }
+    // LGPD, minimização: o e-mail serve a quem administra a turma; os colegas
+    // se reconhecem pelo nome.
+    const mostraEmail = papel === 'representante';
 
     const membros = await TurmaMember.find({ turmaId: req.params.id })
       .populate('userId', 'name email')
@@ -177,7 +181,7 @@ exports.listarMembros = async (req, res) => {
       .map((m) => ({
         _id: m.userId._id,
         name: m.userId.name,
-        email: m.userId.email,
+        ...(mostraEmail && { email: m.userId.email }),
         role: m.role,
         joinedAt: m.joinedAt
       }));
