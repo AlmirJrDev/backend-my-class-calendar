@@ -78,6 +78,36 @@ describe('validarPlano', () => {
   it('ignora média mínima fora de 0 a 10', () => {
     expect(validarPlano({ ...corpoRedes(), minimumGrade: 60 }).plano.minimumGrade).toBeUndefined();
   });
+
+  it('aceita grupo, nota mínima por item e exame, e grava os três', () => {
+    const corpo = corpoRedes();
+    corpo.gradeFormula[4].notaMinima = 4;
+    corpo.gradeFormula[0].grupo = 'm1';
+    corpo.exame = { ativo: true, mediaMinimaParaExame: 4, notaFinalMinima: 5 };
+
+    const { erros, plano } = validarPlano(corpo);
+    expect(erros).toEqual([]);
+    expect(plano.gradeFormula[0].grupo).toBe('M1');
+    expect(plano.gradeFormula[4].notaMinima).toBe(4);
+    expect(plano.exame).toEqual({ ativo: true, mediaMinimaParaExame: 4, notaFinalMinima: 5 });
+
+    const campos = camposDaMateria(plano);
+    expect(campos.gradeFormula[4].notaMinima).toBe(4);
+    expect(campos.exame.ativo).toBe(true);
+  });
+
+  it('recusa nota mínima e exame fora do intervalo', () => {
+    const corpo = corpoRedes();
+    corpo.gradeFormula[4].notaMinima = 11;
+    corpo.exame = { ativo: true, pesoDaMedia: 1 };
+    const texto = validarPlano(corpo).erros.join(' ');
+    expect(texto).toMatch(/nota mínima de P1/);
+    expect(texto).toMatch(/pesoDaMedia/);
+  });
+
+  it('plano sem exame não mexe no exame da matéria', () => {
+    expect(camposDaMateria(validarPlano(corpoRedes()).plano)).not.toHaveProperty('exame');
+  });
 });
 
 describe('planejarEventos', () => {

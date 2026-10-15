@@ -3,6 +3,13 @@ const Subject      = require('../models/subject');
 const gradeService = require('../services/gradeService');
 const { filtroDeTurma } = require('../middleware/turma');
 
+/** Chaves que o aluno pode preencher: as da fórmula e, havendo exame, a do exame. */
+const chavesValidas = (subject) => {
+  const chaves = new Set((subject.gradeFormula || []).map(i => i.key));
+  if (subject.exame?.ativo) chaves.add(gradeService.CHAVE_DO_EXAME);
+  return chaves;
+};
+
 // @desc    Salvar/atualizar notas do aluno em uma matéria
 // @route   PUT /api/grades/:subjectId
 // @access  Private
@@ -30,8 +37,8 @@ exports.saveGrades = async (req, res) => {
       });
     }
 
-    // Validar que as chaves enviadas existem na fórmula
-    const validKeys = new Set(subject.gradeFormula.map(i => i.key));
+    // Validar que as chaves enviadas existem na fórmula (e EXAME, se houver exame)
+    const validKeys = chavesValidas(subject);
     const invalidKeys = Object.keys(grades).filter(k => !validKeys.has(k));
     if (invalidKeys.length > 0) {
       return res.status(400).json({
@@ -125,8 +132,7 @@ exports.clearGrade = async (req, res) => {
       return res.status(404).json({ success: false, error: 'Matéria não encontrada' });
     }
 
-    const validKeys = subject.gradeFormula?.map(i => i.key) || [];
-    if (!validKeys.includes(gradeKey)) {
+    if (!chavesValidas(subject).has(gradeKey)) {
       return res.status(400).json({ success: false, error: `Chave "${gradeKey}" não existe nesta matéria` });
     }
 

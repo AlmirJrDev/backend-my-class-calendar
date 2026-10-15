@@ -58,7 +58,8 @@ const resumo = ({ materia, plano, acoes, mudancas }) => ({
   materia: { id: materia._id, nome: materia.name },
   mudancas,
   formulaAntes: (materia.gradeFormula || []).map((i) => ({ key: i.key, label: i.label, weight: i.weight })),
-  formula: plano.gradeFormula.map((i) => ({ key: i.key, label: i.label, weight: i.weight, date: i.date })),
+  formula: plano.gradeFormula.map((i) => ({ key: i.key, label: i.label, weight: i.weight, date: i.date, grupo: i.grupo, notaMinima: i.notaMinima })),
+  exame: plano.exame || null,
   eventos: acoes.map((a) => ({
     acao: a.acao,
     key: a.evento.key,

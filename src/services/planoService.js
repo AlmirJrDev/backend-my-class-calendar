@@ -52,11 +52,20 @@ function validarPlano(corpo = {}) {
       erros.push(`A data de ${key} é inválida.`);
       continue;
     }
+    const notaMinima = item.notaMinima === undefined || item.notaMinima === null || item.notaMinima === ''
+      ? undefined
+      : Number(item.notaMinima);
+    if (notaMinima !== undefined && !(notaMinima >= 0 && notaMinima <= 10)) {
+      erros.push(`A nota mínima de ${key} precisa estar entre 0 e 10.`);
+      continue;
+    }
     gradeFormula.push({
       key,
       label: String(item.label || key).trim(),
       weight: peso,
       date: item.date || undefined,
+      grupo: item.grupo ? normalizar(item.grupo).slice(0, 12) || undefined : undefined,
+      notaMinima,
     });
   }
 
@@ -107,10 +116,32 @@ function validarPlano(corpo = {}) {
       code: corpo.code ? String(corpo.code).trim() : undefined,
       teacher: corpo.teacher ? String(corpo.teacher).trim() : undefined,
       minimumGrade: nota >= 0 && nota <= 10 ? nota : undefined,
+      exame: validarExame(corpo.exame, erros),
       gradeFormula,
       eventos,
     },
   };
+}
+
+/** Exame final do plano, se houver: só os números que fazem sentido. */
+function validarExame(exame, erros) {
+  if (!exame || !exame.ativo) return undefined;
+  const campos = {
+    mediaMinimaParaExame: [0, 10],
+    notaFinalMinima: [0, 10],
+    pesoDaMedia: [0, 0.95],
+  };
+  const resultado = { ativo: true };
+  for (const [campo, [min, max]] of Object.entries(campos)) {
+    if (exame[campo] === undefined || exame[campo] === null || exame[campo] === '') continue;
+    const n = Number(exame[campo]);
+    if (!(n >= min && n <= max)) {
+      erros.push(`O exame tem ${campo} fora do intervalo de ${min} a ${max}.`);
+      continue;
+    }
+    resultado[campo] = n;
+  }
+  return resultado;
 }
 
 /** Primeiro período da matéria no dia da data, como horário; vazio se não há aula. */
@@ -207,8 +238,11 @@ function camposDaMateria(plano) {
       label: i.label,
       weight: i.weight,
       date: i.date ? paraData(i.date) : undefined,
+      grupo: i.grupo,
+      notaMinima: i.notaMinima,
     })),
   };
+  if (plano.exame) campos.exame = plano.exame;
   if (plano.code) campos.code = plano.code;
   if (plano.teacher) campos.teacher = plano.teacher;
   if (plano.minimumGrade !== undefined) campos.minimumGrade = plano.minimumGrade;

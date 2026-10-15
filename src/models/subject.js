@@ -50,6 +50,20 @@ const subjectSchema = new mongoose.Schema({
     },
     date: {
       type: Date
+    },
+    // Média de médias: instrumentos com o mesmo grupo (ex.: "M1") formam uma
+    // média parcial. O peso acima continua sendo o peso efetivo na média final.
+    grupo: {
+      type: String,
+      trim: true,
+      uppercase: true,
+      maxlength: 12
+    },
+    // Nota mínima neste instrumento para passar direto, além da média.
+    notaMinima: {
+      type: Number,
+      min: 0,
+      max: 10
     }
   }
 ],
@@ -58,6 +72,15 @@ minimumGrade: {
   default: 6.0,
   min: 0,
   max: 10
+},
+// Exame final: quem não passa direto, mas tem média ≥ mediaMinimaParaExame,
+// faz o exame; aprova com pesoDaMedia × média + (1 − pesoDaMedia) × exame ≥
+// notaFinalMinima. Ver gradeService.
+exame: {
+  ativo: { type: Boolean, default: false },
+  mediaMinimaParaExame: { type: Number, min: 0, max: 10, default: 4 },
+  notaFinalMinima: { type: Number, min: 0, max: 10, default: 5 },
+  pesoDaMedia: { type: Number, min: 0, max: 0.95, default: 0.5 }
 },
   // Configuração das aulas por dia da semana
   schedule: [
