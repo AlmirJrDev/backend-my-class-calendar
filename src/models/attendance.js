@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const { calcularFrequencia } = require('../services/frequenciaService');
 
 const attendanceSchema = new mongoose.Schema({
   userId: {
@@ -103,41 +104,18 @@ attendanceSchema.statics.getAttendanceStats = async function(userId, subjectId) 
     }
   ]);
 
-  const totalClasses = subject.totalClasses;
-  const totalRegistered = stats.length > 0 ? stats[0].totalRegistered : 0;
-  const absences = stats.length > 0 ? stats[0].absences : 0;
-  const presences = stats.length > 0 ? stats[0].presences : 0;
-  
-  const maxAbsencesAllowed = Math.floor(totalClasses * 0.25); // 25% do total
-  const remainingAbsences = Math.max(0, maxAbsencesAllowed - absences);
-  
-  // Calcular taxas baseadas no total de aulas da matéria
-  const attendanceRate = totalClasses > 0 ? (presences / totalClasses) * 100 : 0;
-  const absenceRate = totalClasses > 0 ? (absences / totalClasses) * 100 : 0;
-  const registeredRate = totalClasses > 0 ? (totalRegistered / totalClasses) * 100 : 0;
-  
-  const isAtRisk = absences > maxAbsencesAllowed;
-  const classesRemaining = Math.max(0, totalClasses - totalRegistered);
-
   return {
-    totalClasses,
-    totalRegistered,
-    classesRemaining,
-    absences,
-    presences,
-    attendanceRate: Math.round(attendanceRate * 100) / 100,
-    absenceRate: Math.round(absenceRate * 100) / 100,
-    registeredRate: Math.round(registeredRate * 100) / 100,
-    maxAbsencesAllowed,
-    remainingAbsences,
-    isAtRisk,
+    ...calcularFrequencia({
+      totalClasses: subject.totalClasses,
+      totalRegistered: stats.length > 0 ? stats[0].totalRegistered : 0,
+      absences: stats.length > 0 ? stats[0].absences : 0,
+      presences: stats.length > 0 ? stats[0].presences : 0
+    }),
     semesterStartDate: subject.semesterStartDate,
     semesterEndDate: subject.semesterEndDate,
     isSemesterActive: subject.isSemesterActive()
   };
 };
-
-// models/attendance.js — substituir o método getAllUserStats existente e adicionar autoFillPastPresences
 
 attendanceSchema.statics.autoFillPastPresences = async function(userId, subject) {
   const today = new Date();
@@ -217,15 +195,17 @@ attendanceSchema.statics.autoFillPastPresences = async function(userId, subject)
   }
 };
 
-// Substituir getAllUserStats — agora busca TODAS as matérias do usuário
-attendanceSchema.statics.getAllUserStats = async function(userId) {
+/**
+ * Frequência do aluno em cada matéria ativa das turmas dele.
+ *
+ * As matérias vêm da TURMA (`filtroTurma`), não do dono: quem cria a matéria é
+ * o representante, então buscar por `userId` deixava a aba vazia para o resto
+ * da turma.
+ */
+attendanceSchema.statics.getAllUserStats = async function(userId, filtroTurma) {
   const Subject = mongoose.model('Subject');
 
-  // Busca todas as matérias do usuário (não só as que têm registro)
-  const subjects = await Subject.find({
-    userId: new mongoose.Types.ObjectId(userId),
-    active: true
-  });
+  const subjects = await Subject.find({ ...filtroTurma, active: true });
 
   const statsPromises = subjects.map(async (subject) => {
     // Auto-fill presences antes de calcular

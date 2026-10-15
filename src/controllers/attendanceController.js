@@ -1,5 +1,15 @@
 const Attendance = require('../models/attendance');
 const Subject = require('../models/subject');
+const { filtroDeTurma } = require('../middleware/turma');
+const { resumirFrequencias } = require('../services/frequenciaService');
+
+/** A matéria, só se for de uma turma da pessoa. */
+const materiaDaTurma = (req, subjectId) =>
+  Subject.findOne({ _id: subjectId, ...filtroDeTurma(req) });
+
+/** Ids das matérias das turmas da pessoa, para não misturar turmas no histórico. */
+const idsDasMaterias = async (req) =>
+  (await Subject.find(filtroDeTurma(req)).select('_id').lean()).map((m) => m._id);
 
 // @desc    Registrar presença/falta
 // @route   POST /api/attendance
@@ -16,8 +26,7 @@ exports.recordAttendance = async (req, res) => {
       });
     }
 
-    // Verificar se a matéria existe
-    const subject = await Subject.findById(subjectId);
+    const subject = await materiaDaTurma(req, subjectId);
     if (!subject) {
       return res.status(404).json({
         success: false,
@@ -86,10 +95,15 @@ exports.bulkRecordAttendance = async (req, res) => {
 
     const results = [];
     const errors = [];
+    const permitidas = new Set((await idsDasMaterias(req)).map(String));
 
     for (const record of records) {
       try {
         const { subjectId, date, period, isPresent, notes } = record;
+
+        if (!permitidas.has(String(subjectId))) {
+          throw new Error('Matéria não encontrada');
+        }
 
         const existingAttendance = await Attendance.findOne({
           userId: req.user.id,
@@ -144,7 +158,7 @@ exports.getSubjectStats = async (req, res) => {
   try {
     const { subjectId } = req.params;
 
-    const subject = await Subject.findById(subjectId);
+    const subject = await materiaDaTurma(req, subjectId);
     if (!subject) {
       return res.status(404).json({
         success: false,
@@ -177,7 +191,7 @@ exports.getSubjectStats = async (req, res) => {
 // @access  Private
 exports.getAllStats = async (req, res) => {
   try {
-    const stats = await Attendance.getAllUserStats(req.user.id);
+    const stats = await Attendance.getAllUserStats(req.user.id, filtroDeTurma(req));
 
     // Ordenar por taxa de presença (matérias em risco primeiro)
     stats.sort((a, b) => {
@@ -207,6 +221,13 @@ exports.getSubjectHistory = async (req, res) => {
   try {
     const { subjectId } = req.params;
     const { startDate, endDate, isPresent } = req.query;
+
+    if (!(await materiaDaTurma(req, subjectId))) {
+      return res.status(404).json({
+        success: false,
+        error: 'Matéria não encontrada'
+      });
+    }
 
     const filter = {
       userId: req.user.id,
@@ -250,7 +271,7 @@ exports.getAllHistory = async (req, res) => {
   try {
     const { startDate, endDate, isPresent } = req.query;
 
-    const filter = { userId: req.user.id };
+    const filter = { userId: req.user.id, subjectId: { $in: await idsDasMaterias(req) } };
 
     if (startDate || endDate) {
       filter.date = {};
@@ -356,7 +377,7 @@ exports.deleteAttendance = async (req, res) => {
 // @access  Private
 exports.getAtRiskSubjects = async (req, res) => {
   try {
-    const allStats = await Attendance.getAllUserStats(req.user.id);
+    const allStats = await Attendance.getAllUserStats(req.user.id, filtroDeTurma(req));
     const atRisk = allStats.filter(stat => stat.isAtRisk);
 
     res.status(200).json({
@@ -378,23 +399,11 @@ exports.getAtRiskSubjects = async (req, res) => {
 // @access  Private
 exports.getSummary = async (req, res) => {
   try {
-    const allStats = await Attendance.getAllUserStats(req.user.id);
-    
-    const summary = {
-      totalSubjects: allStats.length,
-      subjectsAtRisk: allStats.filter(s => s.isAtRisk).length,
-      totalClasses: allStats.reduce((sum, s) => sum + s.totalClasses, 0),
-      totalAbsences: allStats.reduce((sum, s) => sum + s.absences, 0),
-      totalPresences: allStats.reduce((sum, s) => sum + s.presences, 0),
-      averageAttendanceRate: allStats.length > 0
-        ? Math.round((allStats.reduce((sum, s) => sum + s.attendanceRate, 0) / allStats.length) * 100) / 100
-        : 0,
-      subjects: allStats
-    };
+    const allStats = await Attendance.getAllUserStats(req.user.id, filtroDeTurma(req));
 
     res.status(200).json({
       success: true,
-      data: summary
+      data: resumirFrequencias(allStats)
     });
   } catch (error) {
     res.status(500).json({

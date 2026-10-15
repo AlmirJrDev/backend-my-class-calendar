@@ -1,6 +1,7 @@
 const GradeEntry   = require('../models/gradeEntry');
 const Subject      = require('../models/subject');
 const gradeService = require('../services/gradeService');
+const { filtroDeTurma } = require('../middleware/turma');
 
 // @desc    Salvar/atualizar notas do aluno em uma matéria
 // @route   PUT /api/grades/:subjectId
@@ -18,7 +19,7 @@ exports.saveGrades = async (req, res) => {
     }
 
     // Buscar matéria e validar que gradeFormula existe
-    const subject = await Subject.findById(subjectId);
+    const subject = await Subject.findOne({ _id: subjectId, ...filtroDeTurma(req) });
     if (!subject) {
       return res.status(404).json({ success: false, error: 'Matéria não encontrada' });
     }
@@ -87,7 +88,7 @@ exports.getGrades = async (req, res) => {
   try {
     const { subjectId } = req.params;
 
-    const subject = await Subject.findById(subjectId);
+    const subject = await Subject.findOne({ _id: subjectId, ...filtroDeTurma(req) });
     if (!subject) {
       return res.status(404).json({ success: false, error: 'Matéria não encontrada' });
     }
@@ -119,7 +120,7 @@ exports.clearGrade = async (req, res) => {
   try {
     const { subjectId, gradeKey } = req.params;
 
-    const subject = await Subject.findById(subjectId);
+    const subject = await Subject.findOne({ _id: subjectId, ...filtroDeTurma(req) });
     if (!subject) {
       return res.status(404).json({ success: false, error: 'Matéria não encontrada' });
     }

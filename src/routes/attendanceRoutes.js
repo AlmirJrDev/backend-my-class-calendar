@@ -13,9 +13,11 @@ const {
   getSummary
 } = require('../controllers/attendanceController');
 const { protect } = require('../middleware/auth');
+const { escopoDeTurma } = require('../middleware/turma');
 
-// Aplicar proteção a todas as rotas
-router.use(protect);
+// Nota e falta são do aluno, mas as matérias são da turma: toda rota resolve a
+// turma para não aceitar registro de matéria alheia nem misturar turmas.
+router.use(protect, escopoDeTurma);
 
 // Rotas de registro
 router.post('/', recordAttendance);
